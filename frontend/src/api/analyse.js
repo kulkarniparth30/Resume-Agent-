@@ -15,6 +15,16 @@ export const uploadResume = async (file) => {
   formData.append('file', file);
   const response = await client.post('/resume/upload', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 60000,
+  });
+  return response.data;
+};
+
+export const rankMultipleResumes = async (resumes, jd_text, job_role) => {
+  const response = await client.post('/analyse/rank-multiple', {
+    resumes,
+    jd_text,
+    job_role,
   });
   return response.data;
 };

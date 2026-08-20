@@ -1,9 +1,10 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FileUp, Tags, Briefcase, FileText, CheckCircle2, X, UploadCloud, Search, Sparkles, ArrowRight, Info } from 'lucide-react';
+import { FileUp, Tags, Briefcase, FileText, CheckCircle2, X, UploadCloud, Search, Sparkles, ArrowRight, Info, AlertCircle } from 'lucide-react';
 import useAgentStore from '../store/useAgentStore';
 import SkillCard from '../components/SkillCard';
 import LoadingAgent from '../components/LoadingAgent';
+import { uploadResume, analyseResume } from '../api/analyse';
 
 const SUGGESTED_SKILLS = [
   'Python', 'JavaScript', 'React', 'Node.js', 'TypeScript', 'Java', 'C++',
@@ -24,10 +25,14 @@ export default function Upload() {
   const [skillInput, setSkillInput] = useState('');
   const [showSkillSuggestions, setShowSkillSuggestions] = useState(false);
   const [showRoleSuggestions, setShowRoleSuggestions] = useState(false);
+  const [error, setError] = useState('');
   const fileInputRef = useRef(null);
 
   const {
+    resumeText,
+    setResumeText,
     resumeFileName,
+    resumeFile,
     setResumeFile,
     manualSkills = [],
     addSkill,
@@ -35,7 +40,8 @@ export default function Upload() {
     jobRole,
     setJobRole,
     jdText,
-    setJdText
+    setJdText,
+    setAnalysisResult,
   } = useAgentStore();
 
   const tabs = [
@@ -87,8 +93,39 @@ export default function Upload() {
 
   const hasAnyInput = Boolean(resumeFileName) || manualSkills.length > 0 || Boolean(jobRole) || Boolean(jdText);
 
-  const handleAnalyze = () => {
+  const handleAnalyze = async () => {
+    setError('');
     setIsLoading(true);
+
+    try {
+      // Step 1: Upload file if present
+      let parsedText = resumeText;
+      if (resumeFile && !resumeText) {
+        try {
+          const uploadResult = await uploadResume(resumeFile);
+          parsedText = uploadResult.text;
+          setResumeText(parsedText);
+        } catch (uploadErr) {
+          console.error('Upload failed:', uploadErr);
+          // Continue without file text if upload fails
+        }
+      }
+
+      // Step 2: Run analysis
+      const result = await analyseResume({
+        resume_text: parsedText,
+        job_role: jobRole,
+        jd_text: jdText,
+        manual_skills: manualSkills,
+      });
+
+      setAnalysisResult(result);
+    } catch (err) {
+      console.error('Analysis failed:', err);
+      setError(err?.response?.data?.detail || 'Analysis failed. Make sure the backend is running on port 8000.');
+      setIsLoading(false);
+      return;
+    }
   };
 
   const handleLoadingComplete = () => {
@@ -131,6 +168,20 @@ export default function Upload() {
             Upload your resume or enter details to get tailored career insights
           </p>
         </div>
+
+        {/* Error Banner */}
+        {error && (
+          <div className="mb-6 bg-danger/10 border border-danger/20 rounded-xl p-4 flex items-start gap-3 animate-fade-in">
+            <AlertCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-danger">Analysis Failed</p>
+              <p className="text-sm text-danger/80 mt-0.5">{error}</p>
+            </div>
+            <button onClick={() => setError('')} className="ml-auto text-danger/50 hover:text-danger cursor-pointer">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
 
         {/* Form Card */}
         <div className="bg-white rounded-2xl shadow-lg border border-border overflow-hidden animate-slide-up">
@@ -212,7 +263,7 @@ export default function Upload() {
                     <p className="text-dark font-semibold text-lg mb-1">File uploaded successfully</p>
                     <p className="text-text-secondary text-sm mb-5">{resumeFileName}</p>
                     <button
-                      onClick={() => setResumeFile(null)}
+                      onClick={() => { setResumeFile(null); setResumeText(''); }}
                       className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-danger bg-danger/5 hover:bg-danger/10 rounded-lg transition-colors cursor-pointer"
                     >
                       <X className="w-4 h-4" />

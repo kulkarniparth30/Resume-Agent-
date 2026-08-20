@@ -1,55 +1,55 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Calendar, BookOpen, Code2, CheckCircle2, Target, MapPin,
-  Trophy, Clock, Sparkles
+  Trophy, Clock, Sparkles, Loader2, ArrowLeft
 } from 'lucide-react';
-
-const ROADMAP_DATA = [
-  {
-    id: 1, month: 'Month 1', title: 'Foundation',
-    items: [
-      { id: '1-s1', type: 'skill', text: 'Python Advanced' },
-      { id: '1-s2', type: 'skill', text: 'Statistics' },
-      { id: '1-s3', type: 'skill', text: 'NumPy/Pandas' },
-      { id: '1-p1', type: 'project', text: 'Data Analysis Dashboard' },
-      { id: '1-c1', type: 'course', text: 'Python for Data Science (Coursera)' }
-    ]
-  },
-  {
-    id: 2, month: 'Month 2', title: 'Core ML',
-    items: [
-      { id: '2-s1', type: 'skill', text: 'Scikit-learn' },
-      { id: '2-s2', type: 'skill', text: 'Linear Algebra' },
-      { id: '2-s3', type: 'skill', text: 'Feature Engineering' },
-      { id: '2-p1', type: 'project', text: 'ML Classification Model' },
-      { id: '2-c1', type: 'course', text: 'ML Specialization (Coursera)' }
-    ]
-  },
-  {
-    id: 3, month: 'Month 3', title: 'Deep Learning',
-    items: [
-      { id: '3-s1', type: 'skill', text: 'TensorFlow' },
-      { id: '3-s2', type: 'skill', text: 'Neural Networks' },
-      { id: '3-s3', type: 'skill', text: 'Computer Vision' },
-      { id: '3-p1', type: 'project', text: 'Image Classification API' },
-      { id: '3-c1', type: 'course', text: 'Deep Learning Specialization' }
-    ]
-  },
-  {
-    id: 4, month: 'Month 4', title: 'Production & Deployment',
-    items: [
-      { id: '4-s1', type: 'skill', text: 'Docker' },
-      { id: '4-s2', type: 'skill', text: 'FastAPI' },
-      { id: '4-s3', type: 'skill', text: 'AWS EC2' },
-      { id: '4-s4', type: 'skill', text: 'MLOps' },
-      { id: '4-p1', type: 'project', text: 'ML API Service with Docker' },
-      { id: '4-c1', type: 'course', text: 'Docker Mastery (Udemy)' }
-    ]
-  }
-];
+import useAgentStore from '../store/useAgentStore';
+import { generateRoadmap } from '../api/roadmap';
 
 export default function Roadmap() {
-  const [completedItems, setCompletedItems] = useState(new Set(['1-s1', '1-s2']));
+  const analysisResult = useAgentStore((s) => s.analysisResult);
+  const roadmapData = useAgentStore((s) => s.roadmapData);
+  const setRoadmapData = useAgentStore((s) => s.setRoadmapData);
+
+  const [completedItems, setCompletedItems] = useState(() => {
+    const saved = localStorage.getItem('roadmap_completed');
+    return saved ? new Set(JSON.parse(saved)) : new Set();
+  });
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [error, setError] = useState('');
+
+  // Save completed items to localStorage
+  useEffect(() => {
+    localStorage.setItem('roadmap_completed', JSON.stringify([...completedItems]));
+  }, [completedItems]);
+
+  // Generate roadmap when analysis result is available but no roadmap exists
+  useEffect(() => {
+    if (analysisResult && !roadmapData && !isGenerating) {
+      handleGenerate();
+    }
+  }, [analysisResult]);
+
+  const handleGenerate = async () => {
+    if (!analysisResult) return;
+    setIsGenerating(true);
+    setError('');
+    try {
+      const result = await generateRoadmap({
+        candidate_skills: analysisResult.candidate_skills || [],
+        skill_gaps: (analysisResult.skill_gap || []).map(g => g.skill),
+        job_role: useAgentStore.getState().jobRole || 'Software Developer',
+        rank_score: analysisResult.rank_score || 50,
+      });
+      setRoadmapData(result.roadmap || result);
+    } catch (err) {
+      console.error('Roadmap generation failed:', err);
+      setError('Failed to generate roadmap. Make sure the backend is running.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   const toggleItem = (id) => {
     setCompletedItems(prev => {
@@ -59,13 +59,87 @@ export default function Roadmap() {
     });
   };
 
-  const totalItems = ROADMAP_DATA.reduce((a, m) => a + m.items.length, 0);
-  const progressPercent = Math.round((completedItems.size / totalItems) * 100);
+  // No analysis state
+  if (!analysisResult) {
+    return (
+      <div className="min-h-screen bg-surface flex items-center justify-center px-4">
+        <div className="text-center max-w-md animate-fade-in">
+          <div className="w-20 h-20 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
+            <Target className="w-10 h-10 text-primary" />
+          </div>
+          <h2 className="text-2xl font-bold text-dark mb-3">No Roadmap Yet</h2>
+          <p className="text-text-secondary mb-6">Run a resume analysis first to get a personalized learning roadmap.</p>
+          <Link
+            to="/upload"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white font-semibold rounded-xl hover:bg-primary-light transition-colors"
+          >
+            <Sparkles className="w-4 h-4" />
+            Analyse Resume
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // Loading state
+  if (isGenerating) {
+    return (
+      <div className="min-h-screen bg-surface flex items-center justify-center px-4">
+        <div className="text-center animate-fade-in">
+          <Loader2 className="w-12 h-12 text-primary animate-spin mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-dark mb-2">Generating Your Roadmap</h2>
+          <p className="text-text-secondary text-sm">AI is creating a personalized learning path based on your profile...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-surface flex items-center justify-center px-4">
+        <div className="text-center max-w-md animate-fade-in">
+          <p className="text-danger font-semibold mb-4">{error}</p>
+          <button onClick={handleGenerate} className="px-6 py-3 bg-primary text-white font-semibold rounded-xl hover:bg-primary-light transition-colors cursor-pointer">
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const roadmap = Array.isArray(roadmapData) ? roadmapData : [];
+
+  if (roadmap.length === 0) {
+    return (
+      <div className="min-h-screen bg-surface flex items-center justify-center px-4">
+        <div className="text-center max-w-md animate-fade-in">
+          <p className="text-text-secondary mb-4">No roadmap data available.</p>
+          <button onClick={handleGenerate} className="px-6 py-3 bg-primary text-white font-semibold rounded-xl hover:bg-primary-light transition-colors cursor-pointer">
+            Generate Roadmap
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const totalItems = roadmap.reduce((a, m) => a + (m.items?.length || 0), 0);
+  const progressPercent = totalItems > 0 ? Math.round((completedItems.size / totalItems) * 100) : 0;
 
   const getMonthProgress = (items) => {
+    if (!items || items.length === 0) return 0;
     const done = items.filter(i => completedItems.has(i.id)).length;
     return Math.round((done / items.length) * 100);
   };
+
+  const getRankMessage = () => {
+    const rank = analysisResult.rank_score || 50;
+    if (rank >= 70) return { text: 'You\'re close! Focus on advanced polish.', months: '1-2' };
+    if (rank >= 40) return { text: 'Solid base. Target your specific skill gaps.', months: '3-4' };
+    return { text: 'Build a strong foundation first.', months: '4-6' };
+  };
+
+  const rankMsg = getRankMessage();
 
   return (
     <div className="min-h-screen bg-surface py-8 sm:py-12 px-4 sm:px-6 lg:px-8">
@@ -79,19 +153,21 @@ export default function Roadmap() {
               <div>
                 <div className="flex items-center gap-2 text-sm font-semibold text-primary mb-2">
                   <Target className="w-4 h-4" />
-                  Career Target
+                  Personalized Career Roadmap
                 </div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-dark">Machine Learning Engineer</h1>
-                <p className="text-text-secondary mt-1 flex items-center gap-2 text-sm">
-                  <MapPin className="w-4 h-4" /> From: Junior Developer
+                <h1 className="text-2xl sm:text-3xl font-bold text-dark">
+                  {useAgentStore.getState().jobRole || 'Your Target Role'}
+                </h1>
+                <p className="text-text-secondary mt-1 text-sm">
+                  {rankMsg.text}
                 </p>
               </div>
               <div className="flex flex-col gap-2">
                 <span className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-xl text-sm font-medium border border-primary/20">
-                  <Clock className="w-4 h-4" /> Est. 3-4 months
+                  <Clock className="w-4 h-4" /> Est. {rankMsg.months} months
                 </span>
                 <span className="inline-flex items-center gap-2 text-sm text-text-secondary">
-                  <Trophy className="w-4 h-4 text-warning" /> Goal: Mid-level MLE
+                  <Trophy className="w-4 h-4 text-warning" /> Rank Score: {analysisResult.rank_score || 'N/A'}/100
                 </span>
               </div>
             </div>
@@ -115,8 +191,9 @@ export default function Roadmap() {
           <div className="absolute left-5 top-0 bottom-0 w-0.5 bg-border" />
 
           <div className="space-y-8">
-            {ROADMAP_DATA.map((month) => {
-              const prog = getMonthProgress(month.items);
+            {roadmap.map((month) => {
+              const items = month.items || [];
+              const prog = getMonthProgress(items);
               const isDone = prog === 100;
               const isActive = prog > 0 && prog < 100;
 
@@ -148,28 +225,30 @@ export default function Roadmap() {
                     {/* Content */}
                     <div className="p-5 space-y-4">
                       {/* Skills */}
-                      <div>
-                        <h4 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                          <Code2 className="w-3.5 h-3.5" /> Skills to Learn
-                        </h4>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          {month.items.filter(i => i.type === 'skill').map(skill => {
-                            const checked = completedItems.has(skill.id);
-                            return (
-                              <label key={skill.id} className={`flex items-center gap-2.5 p-2.5 rounded-lg border cursor-pointer transition-colors ${checked ? 'bg-success/5 border-success/20' : 'bg-surface-alt border-border hover:bg-surface'}`}>
-                                <button type="button" onClick={() => toggleItem(skill.id)} className={`w-4 h-4 rounded flex-shrink-0 flex items-center justify-center cursor-pointer transition-colors ${checked ? 'bg-success text-white' : 'border border-border bg-white'}`}>
-                                  {checked && <CheckCircle2 className="w-3 h-3" />}
-                                </button>
-                                <span className={`text-sm ${checked ? 'text-text-muted line-through' : 'text-dark'}`}>{skill.text}</span>
-                              </label>
-                            );
-                          })}
+                      {items.filter(i => i.type === 'skill').length > 0 && (
+                        <div>
+                          <h4 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                            <Code2 className="w-3.5 h-3.5" /> Skills to Learn
+                          </h4>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {items.filter(i => i.type === 'skill').map(skill => {
+                              const checked = completedItems.has(skill.id);
+                              return (
+                                <label key={skill.id} className={`flex items-center gap-2.5 p-2.5 rounded-lg border cursor-pointer transition-colors ${checked ? 'bg-success/5 border-success/20' : 'bg-surface-alt border-border hover:bg-surface'}`}>
+                                  <button type="button" onClick={() => toggleItem(skill.id)} className={`w-4 h-4 rounded flex-shrink-0 flex items-center justify-center cursor-pointer transition-colors ${checked ? 'bg-success text-white' : 'border border-border bg-white'}`}>
+                                    {checked && <CheckCircle2 className="w-3 h-3" />}
+                                  </button>
+                                  <span className={`text-sm ${checked ? 'text-text-muted line-through' : 'text-dark'}`}>{skill.text}</span>
+                                </label>
+                              );
+                            })}
+                          </div>
                         </div>
-                      </div>
+                      )}
 
                       {/* Project & Course */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {month.items.filter(i => i.type === 'project').map(item => {
+                        {items.filter(i => i.type === 'project').map(item => {
                           const checked = completedItems.has(item.id);
                           return (
                             <div key={item.id}>
@@ -185,7 +264,7 @@ export default function Roadmap() {
                             </div>
                           );
                         })}
-                        {month.items.filter(i => i.type === 'course').map(item => {
+                        {items.filter(i => i.type === 'course').map(item => {
                           const checked = completedItems.has(item.id);
                           return (
                             <div key={item.id}>
@@ -208,6 +287,17 @@ export default function Roadmap() {
               );
             })}
           </div>
+        </div>
+
+        {/* Regenerate button */}
+        <div className="mt-8 text-center">
+          <button
+            onClick={() => { setRoadmapData(null); handleGenerate(); }}
+            className="inline-flex items-center gap-2 px-5 py-2.5 border-2 border-primary text-primary font-semibold rounded-xl hover:bg-primary/5 transition-colors cursor-pointer"
+          >
+            <Sparkles className="w-4 h-4" />
+            Regenerate Roadmap
+          </button>
         </div>
       </div>
     </div>
