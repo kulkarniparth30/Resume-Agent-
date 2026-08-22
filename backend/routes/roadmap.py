@@ -6,10 +6,10 @@ from services.roadmap_generator import generate_roadmap
 router = APIRouter()
 
 class RoadmapRequest(BaseModel):
-    candidate_skills: List[str]
-    skill_gaps: List[Dict[str, Any]]
-    job_role: str
-    rank_score: int
+    candidate_skills: List[str] = []
+    skill_gaps: List[Any] = []
+    job_role: str = "Software Developer"
+    rank_score: int = 50
 
 @router.post("/generate")
 async def generate(req: RoadmapRequest):

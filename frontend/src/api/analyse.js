@@ -35,3 +35,8 @@ export const getJobs = async (role, location) => {
   });
   return response.data;
 };
+
+export const parseStructuredResume = async (resume_text) => {
+  const response = await client.post('/resume/parse-structured', { resume_text });
+  return response.data;
+};

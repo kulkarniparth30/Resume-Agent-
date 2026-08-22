@@ -23,9 +23,10 @@ client.interceptors.request.use((config) => {
 client.interceptors.response.use(
   (response) => response,
   (error) => {
+    // If token expired or invalid, clear local auth credentials
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
-      window.location.href = '/';
+      localStorage.removeItem('auth_user');
     }
     return Promise.reject(error);
   }

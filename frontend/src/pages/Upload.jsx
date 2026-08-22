@@ -1,20 +1,75 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FileUp, Tags, Briefcase, FileText, CheckCircle2, X, UploadCloud, Search, Sparkles, ArrowRight, Info, AlertCircle } from 'lucide-react';
+import { FileUp, Tags, Briefcase, FileText, CheckCircle2, X, UploadCloud, Search, Sparkles, ArrowRight, Info, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import useAgentStore from '../store/useAgentStore';
 import SkillCard from '../components/SkillCard';
 import LoadingAgent from '../components/LoadingAgent';
 import { uploadResume, analyseResume } from '../api/analyse';
 
-const SUGGESTED_SKILLS = [
-  'Python', 'JavaScript', 'React', 'Node.js', 'TypeScript', 'Java', 'C++',
-  'AWS', 'Docker', 'Kubernetes', 'SQL', 'MongoDB', 'GraphQL', 'Machine Learning',
-  'TensorFlow', 'FastAPI', 'Flask', 'Git', 'Linux', 'PostgreSQL'
-];
+const SKILL_CATALOG = {
+  'Programming Languages': [
+    'Python', 'JavaScript', 'TypeScript', 'Java', 'C++', 'C', 'C#', 'Go', 'Rust', 'Ruby',
+    'PHP', 'Swift', 'Kotlin', 'Scala', 'R', 'MATLAB', 'Perl', 'Dart', 'Lua', 'Haskell',
+    'Shell/Bash', 'Assembly', 'Objective-C', 'Elixir', 'Clojure',
+  ],
+  'Frontend': [
+    'React', 'Angular', 'Vue.js', 'Next.js', 'Nuxt.js', 'Svelte', 'HTML5', 'CSS3', 'SASS/SCSS',
+    'Tailwind CSS', 'Bootstrap', 'Material UI', 'jQuery', 'Webpack', 'Vite', 'Redux', 'Zustand',
+    'Framer Motion', 'Three.js', 'D3.js', 'GraphQL Client', 'React Native', 'Flutter',
+  ],
+  'Backend': [
+    'Node.js', 'Express.js', 'FastAPI', 'Django', 'Flask', 'Spring Boot', 'Ruby on Rails',
+    'ASP.NET', 'NestJS', 'Gin', 'Fiber', 'Laravel', 'Koa.js', 'Hono', 'GraphQL', 'REST APIs',
+    'gRPC', 'WebSockets', 'Microservices', 'Serverless',
+  ],
+  'Databases': [
+    'SQL', 'PostgreSQL', 'MySQL', 'MongoDB', 'Redis', 'Elasticsearch', 'SQLite', 'DynamoDB',
+    'Cassandra', 'Neo4j', 'Firebase Firestore', 'Supabase', 'CockroachDB', 'MariaDB',
+    'Oracle DB', 'MS SQL Server', 'InfluxDB', 'Prisma', 'Drizzle ORM', 'Sequelize',
+  ],
+  'Cloud & DevOps': [
+    'AWS', 'Google Cloud (GCP)', 'Azure', 'Docker', 'Kubernetes', 'Terraform', 'Ansible',
+    'CI/CD', 'GitHub Actions', 'Jenkins', 'GitLab CI', 'Nginx', 'Apache', 'Vercel', 'Netlify',
+    'Cloudflare', 'Heroku', 'DigitalOcean', 'Linux', 'Prometheus', 'Grafana', 'ArgoCD', 'Helm',
+  ],
+  'AI & Machine Learning': [
+    'Machine Learning', 'Deep Learning', 'TensorFlow', 'PyTorch', 'Keras', 'Scikit-learn',
+    'NLP', 'Computer Vision', 'LLMs', 'Hugging Face', 'OpenCV', 'YOLO', 'Stable Diffusion',
+    'Langchain', 'RAG', 'Fine-tuning', 'MLOps', 'MLflow', 'Kubeflow', 'Feature Engineering',
+    'Neural Networks', 'Transformers', 'GANs', 'Reinforcement Learning',
+  ],
+  'Data Science & Analytics': [
+    'Pandas', 'NumPy', 'Matplotlib', 'Seaborn', 'Plotly', 'Jupyter Notebooks', 'Power BI',
+    'Tableau', 'Apache Spark', 'Hadoop', 'Airflow', 'dbt', 'ETL Pipelines', 'Data Warehousing',
+    'BigQuery', 'Snowflake', 'Databricks', 'Statistical Analysis', 'A/B Testing', 'Data Modeling',
+  ],
+  'Tools & Platforms': [
+    'Git', 'GitHub', 'GitLab', 'Bitbucket', 'Jira', 'Confluence', 'Figma', 'Postman',
+    'VS Code', 'IntelliJ IDEA', 'Slack', 'Notion', 'Linear', 'Trello', 'Swagger/OpenAPI',
+  ],
+  'Security & Networking': [
+    'Cybersecurity', 'OWASP', 'Penetration Testing', 'OAuth 2.0', 'JWT', 'SSL/TLS',
+    'Encryption', 'Firewall', 'VPN', 'Network Security', 'SIEM', 'SOC',
+  ],
+  'Mobile Development': [
+    'React Native', 'Flutter', 'iOS (Swift)', 'Android (Kotlin)', 'Ionic', 'Xamarin',
+    'SwiftUI', 'Jetpack Compose', 'Expo', 'App Store Deployment',
+  ],
+  'Soft Skills & Other': [
+    'Agile/Scrum', 'System Design', 'Data Structures', 'Algorithms', 'Design Patterns',
+    'Technical Writing', 'API Design', 'Testing (Jest/Vitest)', 'Selenium', 'Cypress',
+    'Performance Optimization', 'Accessibility (a11y)', 'SEO', 'Web3/Blockchain', 'Solidity',
+  ],
+};
+
+// Flatten all skills for autocomplete
+const ALL_SKILLS = Object.values(SKILL_CATALOG).flat();
 
 const SUGGESTED_ROLES = [
   'Data Scientist', 'ML Engineer', 'Backend Developer', 'Frontend Developer',
-  'Full Stack Developer', 'DevOps Engineer', 'Data Analyst', 'Cloud Architect'
+  'Full Stack Developer', 'DevOps Engineer', 'Data Analyst', 'Cloud Architect',
+  'Software Engineer', 'Mobile Developer', 'Product Manager', 'QA Engineer',
+  'Security Engineer', 'Data Engineer', 'AI Engineer', 'Site Reliability Engineer',
 ];
 
 export default function Upload() {
@@ -26,6 +81,7 @@ export default function Upload() {
   const [showSkillSuggestions, setShowSkillSuggestions] = useState(false);
   const [showRoleSuggestions, setShowRoleSuggestions] = useState(false);
   const [error, setError] = useState('');
+  const [expandedCategories, setExpandedCategories] = useState({});
   const fileInputRef = useRef(null);
 
   const {
@@ -91,9 +147,22 @@ export default function Upload() {
     setShowRoleSuggestions(false);
   };
 
+  const toggleCategory = (category) => {
+    setExpandedCategories(prev => ({
+      ...prev,
+      [category]: !prev[category],
+    }));
+  };
+
   const hasAnyInput = Boolean(resumeFileName) || manualSkills.length > 0 || Boolean(jobRole) || Boolean(jdText);
 
   const handleAnalyze = async () => {
+    const currentUser = useAgentStore.getState().user;
+    if (!currentUser) {
+      useAgentStore.getState().openAuthModal('signup');
+      return;
+    }
+
     setError('');
     setIsLoading(true);
 
@@ -120,6 +189,13 @@ export default function Upload() {
       });
 
       setAnalysisResult(result);
+      useAgentStore.getState().addAnalysisToHistory({
+        id: Date.now(),
+        date: new Date().toISOString(),
+        jobRole: jobRole || 'General Analysis',
+        jdText: jdText,
+        result: result,
+      });
     } catch (err) {
       console.error('Analysis failed:', err);
       setError(err?.response?.data?.detail || 'Analysis failed. Make sure the backend is running on port 8000.');
@@ -142,6 +218,11 @@ export default function Upload() {
     role: Boolean(jobRole),
     jd: Boolean(jdText),
   };
+
+  // Filter autocomplete suggestions
+  const filteredSuggestions = skillInput
+    ? ALL_SKILLS.filter(s => s.toLowerCase().includes(skillInput.toLowerCase()) && !manualSkills.includes(s)).slice(0, 12)
+    : [];
 
   if (isLoading) {
     return (
@@ -277,14 +358,15 @@ export default function Upload() {
             {/* === My Skills Tab === */}
             {activeTab === 'skills' && (
               <div className="animate-fade-in">
-                <div className="relative mb-6">
+                {/* Search input */}
+                <div className="relative mb-4">
                   <label className="block text-sm font-semibold text-dark mb-2">Add Your Skills</label>
                   <div className="relative">
                     <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted" />
                     <input
                       type="text"
                       className="w-full pl-11 pr-4 py-3 rounded-xl border border-border bg-surface-alt focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none text-dark placeholder:text-text-muted"
-                      placeholder="Type a skill and press Enter..."
+                      placeholder="Search skills or type and press Enter..."
                       value={skillInput}
                       onChange={(e) => { setSkillInput(e.target.value); setShowSkillSuggestions(true); }}
                       onKeyDown={handleSkillKeyDown}
@@ -295,11 +377,16 @@ export default function Upload() {
 
                   {showSkillSuggestions && skillInput && (
                     <div className="absolute z-10 mt-1 w-full bg-white border border-border rounded-xl shadow-lg max-h-48 overflow-y-auto">
-                      {SUGGESTED_SKILLS.filter(s => s.toLowerCase().includes(skillInput.toLowerCase()) && !manualSkills.includes(s)).length > 0 ? (
-                        SUGGESTED_SKILLS.filter(s => s.toLowerCase().includes(skillInput.toLowerCase()) && !manualSkills.includes(s)).map(skill => (
+                      {filteredSuggestions.length > 0 ? (
+                        filteredSuggestions.map(skill => (
                           <button
                             key={skill}
+                            type="button"
                             className="w-full text-left px-4 py-2.5 hover:bg-surface-alt text-dark text-sm transition-colors cursor-pointer"
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              handleAddSkill(skill);
+                            }}
                             onClick={() => handleAddSkill(skill)}
                           >
                             {skill}
@@ -312,9 +399,10 @@ export default function Upload() {
                   )}
                 </div>
 
-                <div>
+                {/* Added Skills */}
+                <div className="mb-5">
                   <h3 className="text-sm font-semibold text-dark mb-3">Added Skills ({manualSkills?.length || 0})</h3>
-                  <div className="flex flex-wrap gap-2 min-h-[100px] items-start">
+                  <div className="flex flex-wrap gap-2 min-h-[48px] items-start">
                     {manualSkills?.map((skill) => (
                       <SkillCard
                         key={skill}
@@ -325,8 +413,57 @@ export default function Upload() {
                       />
                     ))}
                     {(!manualSkills || manualSkills.length === 0) && (
-                      <p className="text-text-muted text-sm italic w-full">No skills added yet. Start typing above.</p>
+                      <p className="text-text-muted text-sm italic w-full">Click skills below or type above to add.</p>
                     )}
+                  </div>
+                </div>
+
+                {/* Skill Catalog — Clickable Chips by Category */}
+                <div className="border-t border-border pt-5">
+                  <h3 className="text-sm font-semibold text-dark mb-3 flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-primary" />
+                    Browse Skills by Category
+                  </h3>
+                  <div className="space-y-2 max-h-[320px] overflow-y-auto pr-1">
+                    {Object.entries(SKILL_CATALOG).map(([category, skills]) => {
+                      const isExpanded = expandedCategories[category] !== false; // default expanded for first 3
+                      const defaultExpanded = ['Programming Languages', 'Frontend', 'Backend'].includes(category);
+                      const showExpanded = expandedCategories[category] ?? defaultExpanded;
+
+                      return (
+                        <div key={category} className="bg-surface-alt rounded-xl border border-border overflow-hidden">
+                          <button
+                            onClick={() => toggleCategory(category)}
+                            className="w-full flex items-center justify-between px-4 py-2.5 text-sm font-semibold text-dark hover:bg-surface transition-colors cursor-pointer"
+                          >
+                            <span>{category} <span className="text-text-muted font-normal">({skills.length})</span></span>
+                            {showExpanded ? <ChevronUp className="w-4 h-4 text-text-muted" /> : <ChevronDown className="w-4 h-4 text-text-muted" />}
+                          </button>
+                          {showExpanded && (
+                            <div className="px-4 pb-3 flex flex-wrap gap-1.5">
+                              {skills.map((skill) => {
+                                const isAdded = manualSkills.includes(skill);
+                                return (
+                                  <button
+                                    key={skill}
+                                    onClick={() => !isAdded && handleAddSkill(skill)}
+                                    disabled={isAdded}
+                                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border transition-all duration-150 cursor-pointer
+                                      ${isAdded
+                                        ? 'bg-success/10 text-success border-success/20 cursor-default opacity-60'
+                                        : 'bg-white text-dark border-border hover:border-primary/40 hover:bg-primary/5 hover:text-primary hover:shadow-sm'
+                                      }`}
+                                  >
+                                    {isAdded && <CheckCircle2 className="w-3 h-3" />}
+                                    {skill}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -335,37 +472,70 @@ export default function Upload() {
             {/* === Job Role Tab === */}
             {activeTab === 'role' && (
               <div className="animate-fade-in">
-                <div className="relative">
+                <div className="relative mb-5">
                   <label className="block text-sm font-semibold text-dark mb-2">Target Job Role</label>
                   <div className="relative">
                     <Briefcase className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted" />
                     <input
                       type="text"
                       className="w-full pl-11 pr-4 py-3 rounded-xl border border-border bg-surface-alt focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none text-dark placeholder:text-text-muted"
-                      placeholder="e.g., Data Scientist"
+                      placeholder="Search or type a role (e.g. Data Scientist)..."
                       value={jobRole || ''}
                       onChange={(e) => { setJobRole(e.target.value); setShowRoleSuggestions(true); }}
                       onFocus={() => setShowRoleSuggestions(true)}
-                      onBlur={() => setTimeout(() => setShowRoleSuggestions(false), 200)}
+                      onBlur={() => setTimeout(() => setShowRoleSuggestions(false), 250)}
                     />
                   </div>
 
                   {showRoleSuggestions && (
-                    <div className="absolute z-10 mt-1 w-full bg-white border border-border rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                    <div className="absolute z-20 mt-1 w-full bg-white border border-border rounded-xl shadow-lg max-h-60 overflow-y-auto">
                       {SUGGESTED_ROLES.filter(r => (jobRole ? r.toLowerCase().includes(jobRole.toLowerCase()) : true)).map(role => (
                         <button
                           key={role}
-                          className="w-full text-left px-4 py-2.5 hover:bg-surface-alt text-dark text-sm transition-colors cursor-pointer"
+                          type="button"
+                          className="w-full text-left px-4 py-2.5 hover:bg-surface-alt text-dark text-sm transition-colors cursor-pointer flex items-center justify-between"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            handleSelectRole(role);
+                          }}
                           onClick={() => handleSelectRole(role)}
                         >
-                          {role}
+                          <span>{role}</span>
+                          {jobRole === role && <CheckCircle2 className="w-4 h-4 text-success" />}
                         </button>
                       ))}
                     </div>
                   )}
                 </div>
 
-                <div className="mt-6 bg-primary/5 p-4 rounded-xl border border-primary/10 flex items-start gap-3">
+                {/* Popular Clickable Role Chips */}
+                <div className="mb-6">
+                  <span className="block text-xs font-semibold text-text-muted uppercase mb-2 tracking-wider">
+                    Popular Roles (Click to select)
+                  </span>
+                  <div className="flex flex-wrap gap-2">
+                    {SUGGESTED_ROLES.slice(0, 10).map((role) => {
+                      const isSelected = jobRole === role;
+                      return (
+                        <button
+                          key={role}
+                          type="button"
+                          onClick={() => handleSelectRole(role)}
+                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition-all cursor-pointer ${
+                            isSelected
+                              ? 'bg-primary text-white border-primary shadow-sm shadow-primary/25 font-bold'
+                              : 'bg-surface-alt text-dark border-border hover:border-primary/40 hover:bg-primary/5 hover:text-primary'
+                          }`}
+                        >
+                          {isSelected && <CheckCircle2 className="w-3.5 h-3.5" />}
+                          {role}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="bg-primary/5 p-4 rounded-xl border border-primary/10 flex items-start gap-3">
                   <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
                     <Info className="w-4 h-4 text-primary" />
                   </div>

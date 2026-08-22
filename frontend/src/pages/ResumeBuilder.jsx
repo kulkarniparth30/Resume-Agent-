@@ -1,6 +1,7 @@
-import { useState } from 'react';
-import { Sparkles, Download, FileText, Briefcase, GraduationCap, Code2, User, X, CheckCircle2, AlertCircle, Plus, Mail, Phone, Globe, Loader2, MapPin, Link as LinkIcon, Award, BookOpen, Trophy } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Sparkles, Download, FileText, Briefcase, GraduationCap, Code2, User, X, CheckCircle2, AlertCircle, Plus, Mail, Phone, Globe, Loader2, MapPin, Link as LinkIcon, Award, BookOpen, Trophy, Zap, ArrowRight } from 'lucide-react';
 import { enhanceSection, enhanceBullet } from '../api/ai';
+import { parseStructuredResume } from '../api/analyse';
 import useAgentStore from '../store/useAgentStore';
 
 const INITIAL_DATA = {
@@ -39,8 +40,35 @@ export default function ResumeBuilder() {
   const [activeSection, setActiveSection] = useState('Experience');
   const [formData, setFormData] = useState(INITIAL_DATA);
   const [enhancing, setEnhancing] = useState({});
+  const [parsingResume, setParsingResume] = useState(false);
+  const [appliedImprovements, setAppliedImprovements] = useState(new Set());
+  
+  const resumeText = useAgentStore((s) => s.resumeText);
   const jdText = useAgentStore((s) => s.jdText);
   const jobRole = useAgentStore((s) => s.jobRole);
+  const analysisResult = useAgentStore((s) => s.analysisResult);
+
+  // Auto-populate resume builder with uploaded resume
+  useEffect(() => {
+    if (resumeText && !formData.name) {
+      setParsingResume(true);
+      parseStructuredResume(resumeText)
+        .then((data) => {
+          if (data && (data.name || data.experiences?.length || data.education?.length)) {
+            setFormData(prev => ({
+              ...prev,
+              ...data,
+              experiences: data.experiences?.length ? data.experiences : prev.experiences,
+              education: data.education?.length ? data.education : prev.education,
+              projects: data.projects?.length ? data.projects : prev.projects,
+              skillCategories: data.skillCategories?.length ? data.skillCategories : prev.skillCategories,
+            }));
+          }
+        })
+        .catch((err) => console.warn('Could not auto-parse resume:', err))
+        .finally(() => setParsingResume(false));
+    }
+  }, [resumeText]);
 
   const setEnhancingKey = (key, val) => setEnhancing(prev => ({ ...prev, [key]: val }));
 
@@ -71,6 +99,51 @@ export default function ResumeBuilder() {
     }
   };
 
+  const handleApplyImprovement = (item, idx) => {
+    const section = item.section?.toLowerCase();
+    if (section === 'summary') {
+      setFormData(prev => ({ ...prev, summary: item.suggested }));
+    } else if (section === 'experience') {
+      setFormData(prev => {
+        const exps = [...prev.experiences];
+        if (exps.length > 0) {
+          exps[0] = {
+            ...exps[0],
+            bullets: [item.suggested, ...exps[0].bullets.filter(b => b.trim() !== item.current)]
+          };
+        } else {
+          exps.push({
+            id: nextId(),
+            title: jobRole || 'Software Engineer',
+            company: 'Target Experience',
+            duration: '2023 - Present',
+            bullets: [item.suggested]
+          });
+        }
+        return { ...prev, experiences: exps };
+      });
+    } else if (section === 'skills') {
+      setFormData(prev => {
+        const cats = [...prev.skillCategories];
+        if (cats.length > 0) {
+          cats[0] = { ...cats[0], skills: cats[0].skills ? `${cats[0].skills}, ${item.suggested}` : item.suggested };
+        } else {
+          cats.push({ id: nextId(), category: 'Target Skills', skills: item.suggested });
+        }
+        return { ...prev, skillCategories: cats };
+      });
+    } else if (section === 'projects') {
+      setFormData(prev => {
+        const projs = [...prev.projects];
+        if (projs.length > 0) {
+          projs[0] = { ...projs[0], bullets: [item.suggested, ...(projs[0].bullets || [])] };
+        }
+        return { ...prev, projects: projs };
+      });
+    }
+    setAppliedImprovements(prev => new Set([...prev, idx]));
+  };
+
   // Helpers
   const updateList = (field, id, updates) => {
     setFormData(prev => ({
@@ -93,7 +166,9 @@ export default function ResumeBuilder() {
     }));
   };
 
-  const handleExport = (type) => alert(`${type} export coming soon!`);
+  const handleExport = (type) => {
+    window.print();
+  };
 
   const inputClass = "w-full px-3.5 py-2.5 border border-border rounded-xl bg-surface-alt focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-dark transition-all text-sm";
   const labelClass = "block text-sm font-semibold text-dark mb-1.5";
@@ -116,7 +191,10 @@ export default function ResumeBuilder() {
     </button>
   );
 
+  const improvements = analysisResult?.resume_improvements || [];
+
   const tabs = [
+    ...(improvements.length > 0 ? [{ id: 'JD Improvements', icon: Zap, badge: improvements.length }] : []),
     { id: 'Experience', icon: Briefcase },
     { id: 'Projects', icon: FileText },
     { id: 'Skills', icon: Code2 },
@@ -127,6 +205,92 @@ export default function ResumeBuilder() {
 
   const renderEditor = () => {
     switch (activeSection) {
+      case 'JD Improvements':
+        return (
+          <div className="space-y-4 animate-fade-in">
+            <div className="flex items-center justify-between pb-3 border-b border-border">
+              <div>
+                <h3 className="text-lg font-bold text-dark flex items-center gap-2">
+                  <Zap className="w-5 h-5 text-primary" />
+                  AI Suggested Changes for This JD
+                </h3>
+                <p className="text-xs text-text-secondary mt-0.5">
+                  1-Click apply recommended bullet improvements to your live resume
+                </p>
+              </div>
+              <span className="text-xs font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-full">
+                {improvements.length} recommendations
+              </span>
+            </div>
+
+            <div className="space-y-4">
+              {improvements.map((item, idx) => {
+                const isApplied = appliedImprovements.has(idx);
+                return (
+                  <div key={idx} className="bg-white p-5 rounded-xl border border-border shadow-sm space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wider bg-primary/10 text-primary">
+                        {item.section}
+                      </span>
+                      <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                        item.impact === 'High' ? 'bg-danger/10 text-danger' : 'bg-warning/10 text-warning'
+                      }`}>
+                        {item.impact || 'High'} Impact
+                      </span>
+                    </div>
+
+                    {item.current && (
+                      <div>
+                        <span className="text-[11px] font-semibold text-text-muted uppercase">Original in Resume:</span>
+                        <p className="text-xs text-text-secondary bg-surface-alt p-2.5 rounded-lg border border-border line-through opacity-80 mt-0.5">
+                          {item.current}
+                        </p>
+                      </div>
+                    )}
+
+                    <div>
+                      <span className="text-[11px] font-semibold text-success uppercase">Suggested Replacement:</span>
+                      <p className="text-xs text-dark font-medium bg-success/5 border border-success/20 p-3 rounded-lg mt-0.5 leading-relaxed">
+                        {item.suggested}
+                      </p>
+                    </div>
+
+                    {item.reason && (
+                      <p className="text-xs text-text-secondary italic">
+                        <strong className="text-primary">Why: </strong>{item.reason}
+                      </p>
+                    )}
+
+                    <div className="pt-2 flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => handleApplyImprovement(item, idx)}
+                        disabled={isApplied}
+                        className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                          isApplied
+                            ? 'bg-success/10 text-success border border-success/20 cursor-default'
+                            : 'bg-primary hover:bg-primary-light text-white shadow-sm shadow-primary/20 hover:shadow-md'
+                        }`}
+                      >
+                        {isApplied ? (
+                          <>
+                            <CheckCircle2 className="w-4 h-4 text-success" />
+                            Applied to Resume
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="w-4 h-4" />
+                            Apply to Resume
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
       case 'Experience':
         return (
           <div className="space-y-6 animate-fade-in">

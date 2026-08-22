@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import useAgentStore from '../store/useAgentStore';
 import ATSScoreRing from '../components/ATSScoreRing';
@@ -9,6 +9,8 @@ import JobCard from '../components/JobCard';
 import CourseCard from '../components/CourseCard';
 import ProjectCard from '../components/ProjectCard';
 import SalaryChart from '../components/SalaryChart';
+import LearnModal from '../components/LearnModal';
+import ProjectGuideModal from '../components/ProjectGuideModal';
 import {
   AlertTriangle,
   Lightbulb,
@@ -24,6 +26,9 @@ import {
   Clock,
   Trophy,
   BarChart3,
+  History,
+  FileEdit,
+  Zap,
 } from 'lucide-react';
 
 const RankBreakdownBar = ({ label, value, color }) => (
@@ -41,6 +46,17 @@ const RankBreakdownBar = ({ label, value, color }) => (
 export default function Dashboard() {
   const navigate = useNavigate();
   const analysisResult = useAgentStore((state) => state.analysisResult);
+  const jobRole = useAgentStore((state) => state.jobRole);
+  const analysisHistory = useAgentStore((state) => state.analysisHistory);
+  const loadAnalysisFromHistory = useAgentStore((state) => state.loadAnalysisFromHistory);
+  const syncCloudHistory = useAgentStore((state) => state.syncCloudHistory);
+  const [selectedLearnSkill, setSelectedLearnSkill] = useState(null);
+  const [selectedProject, setSelectedProject] = useState(null);
+  const [showHistory, setShowHistory] = useState(false);
+
+  React.useEffect(() => {
+    syncCloudHistory();
+  }, []);
 
   if (!analysisResult) {
     return (
@@ -94,7 +110,7 @@ export default function Dashboard() {
       <div className="max-w-7xl mx-auto">
 
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 animate-fade-in">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 animate-fade-in relative">
           <div>
             <h1 className="text-3xl font-bold text-dark flex items-center gap-3">
               <Activity className="w-8 h-8 text-primary" />
@@ -102,7 +118,51 @@ export default function Dashboard() {
             </h1>
             <p className="text-text-secondary mt-1">Comprehensive review of your resume against industry standards</p>
           </div>
-          <div className="mt-4 sm:mt-0 flex gap-3">
+          <div className="mt-4 sm:mt-0 flex gap-3 items-center">
+            
+            {/* History Dropdown */}
+            {analysisHistory.length > 0 && (
+              <div className="relative">
+                <button
+                  onClick={() => setShowHistory(!showHistory)}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 border border-border text-dark text-sm font-semibold rounded-xl hover:bg-surface-alt transition-colors cursor-pointer"
+                >
+                  <History className="w-4 h-4 text-text-muted" />
+                  History
+                </button>
+                
+                {showHistory && (
+                  <div className="absolute right-0 top-full mt-2 w-64 bg-white border border-border rounded-xl shadow-lg overflow-hidden z-20">
+                    <div className="px-4 py-3 bg-surface-alt border-b border-border">
+                      <h4 className="text-xs font-bold text-dark uppercase tracking-wider">Past Analyses</h4>
+                    </div>
+                    <div className="max-h-60 overflow-y-auto">
+                      {analysisHistory.map((entry, idx) => (
+                        <button
+                          key={entry.id || idx}
+                          onClick={() => {
+                            loadAnalysisFromHistory(idx);
+                            setShowHistory(false);
+                          }}
+                          className="w-full text-left px-4 py-3 border-b border-border last:border-0 hover:bg-surface-alt transition-colors cursor-pointer"
+                        >
+                          <div className="flex justify-between items-start mb-1">
+                            <span className="font-semibold text-sm text-dark truncate pr-2">{entry.jobRole}</span>
+                            <span className="text-[10px] text-text-muted whitespace-nowrap">
+                              {new Date(entry.date).toLocaleDateString()}
+                            </span>
+                          </div>
+                          <div className="text-xs text-text-secondary">
+                            Rank: {entry.result?.rank_score || 0}/100 • Match: {entry.result?.match_percent || 0}%
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             <Link
               to="/roadmap"
               className="inline-flex items-center gap-2 px-5 py-2.5 border-2 border-primary text-primary text-sm font-semibold rounded-xl hover:bg-primary/5 transition-colors"
@@ -174,7 +234,7 @@ export default function Dashboard() {
             {/* Skill Gap Chart */}
             {data.skill_gap && data.skill_gap.length > 0 && (
               <div className="animate-slide-up stagger-3">
-                <SkillGapChart data={data.skill_gap} />
+                <SkillGapChart data={data.skill_gap} onLearnClick={(skill) => setSelectedLearnSkill(skill)} />
               </div>
             )}
 
@@ -221,6 +281,69 @@ export default function Dashboard() {
                 </div>
               )}
             </div>
+
+            {/* Targeted Resume Improvements (AI Tailoring Suggestions) */}
+            {data.resume_improvements && data.resume_improvements.length > 0 && (
+              <div className="bg-white rounded-2xl shadow-md border border-primary/20 p-6 animate-slide-up stagger-5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 pb-4 border-b border-border">
+                  <div>
+                    <h3 className="text-lg font-bold text-dark flex items-center gap-2">
+                      <Zap className="w-5 h-5 text-primary" />
+                      Recommended Resume Changes for This JD
+                    </h3>
+                    <p className="text-xs text-text-secondary mt-1">
+                      Direct before-and-after improvements to match the target job description
+                    </p>
+                  </div>
+                  <Link
+                    to="/resume-builder"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-primary hover:bg-primary-light text-white text-xs font-bold rounded-xl transition-colors shrink-0 shadow-sm shadow-primary/20"
+                  >
+                    <FileEdit className="w-4 h-4" />
+                    Apply in Resume Builder
+                  </Link>
+                </div>
+
+                <div className="space-y-4">
+                  {data.resume_improvements.map((item, idx) => (
+                    <div key={idx} className="p-4 rounded-xl bg-surface-alt border border-border space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <span className="px-2 py-0.5 rounded-md text-[11px] font-bold uppercase tracking-wider bg-primary/10 text-primary">
+                          {item.section}
+                        </span>
+                        <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                          item.impact === 'High' ? 'bg-danger/10 text-danger' : 'bg-warning/10 text-warning'
+                        }`}>
+                          {item.impact || 'High'} Impact
+                        </span>
+                      </div>
+
+                      {item.current && (
+                        <div>
+                          <span className="text-[11px] font-semibold text-text-muted uppercase">Current:</span>
+                          <p className="text-xs text-text-secondary bg-white p-2 rounded-lg border border-border line-through opacity-80 mt-0.5">
+                            {item.current}
+                          </p>
+                        </div>
+                      )}
+
+                      <div>
+                        <span className="text-[11px] font-semibold text-success uppercase">Suggested Improvement:</span>
+                        <p className="text-xs text-dark font-medium bg-success/5 border border-success/20 p-2.5 rounded-lg mt-0.5 leading-relaxed">
+                          {item.suggested}
+                        </p>
+                      </div>
+
+                      {item.reason && (
+                        <p className="text-[11px] text-text-muted italic flex items-center gap-1 mt-1">
+                          <span className="font-semibold text-primary">Why:</span> {item.reason}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* RIGHT COLUMN (2/5) */}
@@ -268,6 +391,7 @@ export default function Dashboard() {
                       description={proj.description}
                       skills_covered={proj.skills_covered}
                       estimated_time={proj.estimated_time}
+                      onStart={() => setSelectedProject(proj)}
                     />
                   ))}
                 </div>
@@ -337,6 +461,23 @@ export default function Dashboard() {
           )}
         </div>
       </div>
+
+      {/* Learn Resources Modal */}
+      {selectedLearnSkill && (
+        <LearnModal
+          skill={selectedLearnSkill}
+          jobRole={jobRole}
+          onClose={() => setSelectedLearnSkill(null)}
+        />
+      )}
+
+      {/* Project Guide Modal */}
+      {selectedProject && (
+        <ProjectGuideModal
+          project={selectedProject}
+          onClose={() => setSelectedProject(null)}
+        />
+      )}
     </div>
   );
 }

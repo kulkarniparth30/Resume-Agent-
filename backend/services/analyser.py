@@ -39,7 +39,23 @@ async def analyse_resume(resume_text: str, jd_text: str = '', job_role: str = ''
       "salary_insights": {{
         "current_range": "4-6 LPA",
         "skills": [{{"skill": "ML", "bump": "+8 LPA", "weeks": 12, "roi": "high"}}]
-      }}
+      }},
+      "resume_improvements": [
+        {{
+          "section": "Experience",
+          "current": "Developed REST APIs using Python and Flask.",
+          "suggested": "Architected high-throughput RESTful microservices with FastAPI & Redis, reducing API response latency by 35% under peak loads.",
+          "reason": "Matches JD requirements for high performance and adds quantifiable impact metrics.",
+          "impact": "High"
+        }},
+        {{
+          "section": "Summary",
+          "current": "Software engineer with experience in Python.",
+          "suggested": "Results-driven Software Engineer with specialized expertise in distributed backend systems, AI agents, and scalable cloud architectures.",
+          "reason": "Elevates personal branding to align directly with target role seniority.",
+          "impact": "Medium"
+        }}
+      ]
     }}
     """
     
@@ -71,7 +87,8 @@ async def analyse_resume(resume_text: str, jd_text: str = '', job_role: str = ''
                 "skills_match": 0, "experience_relevance": 0, "education_fit": 0, "project_alignment": 0
             },
             "fake_skills": [], "suggestions": [], "jobs": [], "courses": [], "project_ideas": [],
-            "salary_insights": {"current_range": "N/A", "skills": []}
+            "salary_insights": {"current_range": "N/A", "skills": []},
+            "resume_improvements": []
         }
 
 async def rank_multiple_resumes(resumes: list[dict], jd_text: str, job_role: str) -> list:

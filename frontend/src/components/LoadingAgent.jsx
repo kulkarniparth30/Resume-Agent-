@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Bot, FileSearch, Brain, Target, CheckCircle2, Loader2 } from 'lucide-react';
+import { useEffect, useState, useCallback } from 'react';
+import { Bot, FileSearch, Brain, Target, CheckCircle2, Loader2, ArrowRight, PartyPopper } from 'lucide-react';
 
 const AGENT_STEPS = [
   { id: 'parse', label: 'Parsing resume...', icon: FileSearch, duration: 2000 },
@@ -8,24 +8,24 @@ const AGENT_STEPS = [
   { id: 'analyse', label: 'Running skill gap analysis...', icon: Brain, duration: 2000 },
   { id: 'score', label: 'Calculating ATS score...', icon: Target, duration: 1500 },
   { id: 'jobs', label: 'Searching live job listings...', icon: FileSearch, duration: 2000 },
-  { id: 'complete', label: 'Analysis complete!', icon: CheckCircle2, duration: 0 },
 ];
+
+const TOTAL_STEPS = AGENT_STEPS.length;
 
 export default function LoadingAgent({ onComplete }) {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [completedSteps, setCompletedSteps] = useState([]);
+  const [isFinished, setIsFinished] = useState(false);
+  const [countdown, setCountdown] = useState(3);
 
+  // Step progression
   useEffect(() => {
-    if (currentStepIndex >= AGENT_STEPS.length) {
-      onComplete?.();
+    if (currentStepIndex >= TOTAL_STEPS) {
+      setIsFinished(true);
       return;
     }
 
     const step = AGENT_STEPS[currentStepIndex];
-    if (step.duration === 0) {
-      setCompletedSteps((prev) => [...prev, step.id]);
-      return;
-    }
 
     const timer = setTimeout(() => {
       setCompletedSteps((prev) => [...prev, step.id]);
@@ -33,29 +33,60 @@ export default function LoadingAgent({ onComplete }) {
     }, step.duration);
 
     return () => clearTimeout(timer);
-  }, [currentStepIndex, onComplete]);
+  }, [currentStepIndex]);
+
+  // Countdown & auto-redirect after all steps finish
+  useEffect(() => {
+    if (!isFinished) return;
+
+    if (countdown <= 0) {
+      onComplete?.();
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setCountdown((prev) => prev - 1);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [isFinished, countdown, onComplete]);
+
+  const handleGoToDashboard = useCallback(() => {
+    onComplete?.();
+  }, [onComplete]);
+
+  const progress = Math.min(completedSteps.length / TOTAL_STEPS, 1) * 100;
 
   return (
     <div className="flex flex-col items-center py-16">
       {/* Agent Avatar */}
       <div className="relative mb-8">
-        <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center">
-          <Bot className="w-10 h-10 text-primary animate-pulse-slow" />
+        <div className={`w-20 h-20 rounded-2xl flex items-center justify-center ${isFinished ? 'bg-success/10' : 'bg-primary/10'}`}>
+          {isFinished ? (
+            <PartyPopper className="w-10 h-10 text-success" />
+          ) : (
+            <Bot className="w-10 h-10 text-primary animate-pulse-slow" />
+          )}
         </div>
-        <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-success flex items-center justify-center animate-pulse">
+        <div className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center animate-pulse ${isFinished ? 'bg-success' : 'bg-success'}`}>
           <span className="w-2 h-2 rounded-full bg-white" />
         </div>
       </div>
 
-      <h3 className="text-xl font-bold text-dark mb-1">Agent is analysing...</h3>
-      <p className="text-sm text-text-secondary mb-8">Please wait while our AI processes your data</p>
+      <h3 className="text-xl font-bold text-dark mb-1">
+        {isFinished ? '🎉 Analysis Complete!' : 'Agent is analysing...'}
+      </h3>
+      <p className="text-sm text-text-secondary mb-8">
+        {isFinished
+          ? `Redirecting to dashboard in ${countdown}s...`
+          : 'Please wait while our AI processes your data'}
+      </p>
 
       {/* Steps */}
       <div className="w-full max-w-md space-y-3">
         {AGENT_STEPS.map((step, index) => {
           const isCompleted = completedSteps.includes(step.id);
           const isCurrent = index === currentStepIndex && !isCompleted;
-          const isPending = index > currentStepIndex;
           const Icon = step.icon;
 
           return (
@@ -98,14 +129,25 @@ export default function LoadingAgent({ onComplete }) {
       <div className="w-full max-w-md mt-6">
         <div className="h-1.5 bg-surface-alt rounded-full overflow-hidden">
           <div
-            className="h-full bg-primary rounded-full transition-all duration-500 ease-out"
-            style={{ width: `${(completedSteps.length / (AGENT_STEPS.length - 1)) * 100}%` }}
+            className={`h-full rounded-full transition-all duration-500 ease-out ${isFinished ? 'bg-success' : 'bg-primary'}`}
+            style={{ width: `${progress}%` }}
           />
         </div>
         <p className="text-xs text-text-muted text-center mt-2">
-          {completedSteps.length}/{AGENT_STEPS.length - 1} steps completed
+          {completedSteps.length}/{TOTAL_STEPS} steps completed
         </p>
       </div>
+
+      {/* View Dashboard Button — appears after completion */}
+      {isFinished && (
+        <button
+          onClick={handleGoToDashboard}
+          className="mt-8 flex items-center gap-2.5 px-8 py-4 bg-primary text-white font-bold text-base rounded-xl hover:bg-primary-light shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer animate-fade-in"
+        >
+          View Dashboard
+          <ArrowRight className="w-5 h-5" />
+        </button>
+      )}
     </div>
   );
 }

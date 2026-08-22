@@ -1,4 +1,4 @@
-import { MapPin, TrendingUp, ExternalLink, Building2 } from 'lucide-react';
+import { MapPin, TrendingUp, ExternalLink, Building2, Clock, Zap } from 'lucide-react';
 
 const getMatchColor = (match) => {
   if (match >= 80) return { bg: 'bg-success/10', text: 'text-success', ring: 'ring-success/20' };
@@ -6,8 +6,16 @@ const getMatchColor = (match) => {
   return { bg: 'bg-danger/10', text: 'text-danger', ring: 'ring-danger/20' };
 };
 
-export default function JobCard({ title, company, location, match, salary, onApply, compact = false }) {
+export default function JobCard({ title, company, location, match, salary, url, experience, posted, source, onApply, compact = false }) {
   const matchStyle = getMatchColor(match);
+
+  const handleApply = () => {
+    if (url) {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } else if (onApply) {
+      onApply();
+    }
+  };
 
   if (compact) {
     return (
@@ -16,20 +24,23 @@ export default function JobCard({ title, company, location, match, salary, onApp
           <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
             <Building2 className="w-5 h-5 text-primary" />
           </div>
-          <span className={`text-xs font-bold px-2.5 py-1 rounded-full ring-1 ${matchStyle.bg} ${matchStyle.text} ${matchStyle.ring}`}>
-            {match}% match
-          </span>
+          {match > 0 && (
+            <span className={`text-xs font-bold px-2.5 py-1 rounded-full ring-1 ${matchStyle.bg} ${matchStyle.text} ${matchStyle.ring}`}>
+              {match}% match
+            </span>
+          )}
         </div>
         <h4 className="font-semibold text-dark text-sm">{title}</h4>
         <p className="text-xs text-text-secondary mt-0.5">{company}</p>
         <div className="flex items-center gap-3 mt-3 text-xs text-text-muted">
           <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{location}</span>
-          <span className="flex items-center gap-1"><TrendingUp className="w-3 h-3" />{salary}</span>
+          {salary && <span className="flex items-center gap-1"><TrendingUp className="w-3 h-3" />{salary}</span>}
         </div>
         <button
-          onClick={onApply}
-          className="mt-3 w-full py-2 text-xs font-semibold bg-primary text-white rounded-lg hover:bg-primary-light transition-colors cursor-pointer"
+          onClick={handleApply}
+          className="mt-3 w-full py-2 text-xs font-semibold bg-primary text-white rounded-lg hover:bg-primary-light transition-colors cursor-pointer flex items-center justify-center gap-1.5"
         >
+          <ExternalLink className="w-3 h-3" />
           Apply Now
         </button>
       </div>
@@ -46,19 +57,30 @@ export default function JobCard({ title, company, location, match, salary, onApp
           <div>
             <h3 className="font-bold text-dark">{title}</h3>
             <p className="text-sm text-text-secondary mt-0.5">{company}</p>
-            <div className="flex items-center gap-4 mt-2 text-sm text-text-muted">
+            <div className="flex items-center flex-wrap gap-3 mt-2 text-sm text-text-muted">
               <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />{location}</span>
-              <span className="flex items-center gap-1"><TrendingUp className="w-3.5 h-3.5" />{salary}</span>
+              {salary && <span className="flex items-center gap-1"><TrendingUp className="w-3.5 h-3.5" />{salary}</span>}
+              {experience && <span className="flex items-center gap-1"><Zap className="w-3.5 h-3.5" />{experience}</span>}
+              {posted && <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" />{posted}</span>}
             </div>
           </div>
         </div>
-        <span className={`text-sm font-bold px-3 py-1.5 rounded-full ring-1 ${matchStyle.bg} ${matchStyle.text} ${matchStyle.ring}`}>
-          {match}% match
-        </span>
+        <div className="flex flex-col items-end gap-2">
+          {match > 0 && (
+            <span className={`text-sm font-bold px-3 py-1.5 rounded-full ring-1 ${matchStyle.bg} ${matchStyle.text} ${matchStyle.ring}`}>
+              {match}% match
+            </span>
+          )}
+          {source && (
+            <span className="text-[10px] font-medium text-text-muted bg-surface-alt px-2 py-0.5 rounded-full">
+              via {source}
+            </span>
+          )}
+        </div>
       </div>
       <div className="mt-4 flex gap-2">
         <button
-          onClick={onApply}
+          onClick={handleApply}
           className="flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold bg-primary text-white rounded-lg hover:bg-primary-light transition-colors cursor-pointer"
         >
           <ExternalLink className="w-4 h-4" />
