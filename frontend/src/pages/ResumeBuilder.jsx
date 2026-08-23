@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Sparkles, Download, FileText, Briefcase, GraduationCap, Code2, User, X, CheckCircle2, AlertCircle, Plus, Mail, Phone, Globe, Loader2, MapPin, Link as LinkIcon, Award, BookOpen, Trophy, Zap, ArrowRight } from 'lucide-react';
+import { Link as RouterLink } from 'react-router-dom';
+import { Sparkles, Download, FileText, Briefcase, GraduationCap, Code2, User, X, CheckCircle2, AlertCircle, Plus, Mail, Phone, Globe, Loader2, MapPin, Link as LinkIcon, Award, BookOpen, Trophy, Zap, ArrowRight, ArrowLeft, Save, Moon } from 'lucide-react';
 import { enhanceSection, enhanceBullet } from '../api/ai';
 import { parseStructuredResume } from '../api/analyse';
 import useAgentStore from '../store/useAgentStore';
@@ -167,7 +168,23 @@ export default function ResumeBuilder() {
   };
 
   const handleExport = (type) => {
-    window.print();
+    const previewEl = document.getElementById('resume-preview');
+    if (!previewEl) { window.print(); return; }
+    const printWindow = window.open('', '_blank', 'width=800,height=1100');
+    printWindow.document.write(`
+      <html><head><title>Resume - ${formData.name || 'Download'}</title>
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+      <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; padding: 40px; color: #1a1a1a; }
+        @media print {
+          body { padding: 0; }
+          @page { margin: 0.5in; size: A4; }
+        }
+      </style></head><body>${previewEl.innerHTML}</body></html>
+    `);
+    printWindow.document.close();
+    printWindow.onload = () => { printWindow.print(); printWindow.close(); };
   };
 
   const inputClass = "w-full px-3.5 py-2.5 border border-border rounded-xl bg-surface-alt focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-dark transition-all text-sm";
@@ -731,208 +748,279 @@ export default function ResumeBuilder() {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-surface py-6 sm:py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto space-y-6">
+  // Calculate completeness percentage
+  const completeness = (() => {
+    let filled = 0, total = 10;
+    if (formData.name) filled++;
+    if (formData.email) filled++;
+    if (formData.phone) filled++;
+    if (formData.summary) filled++;
+    if (formData.experiences.some(e => e.title)) filled++;
+    if (formData.experiences.some(e => e.bullets.some(b => b.trim()))) filled++;
+    if (formData.education.some(e => e.degree)) filled++;
+    if (formData.projects.some(p => p.name)) filled++;
+    if (formData.skillCategories.some(c => c.skills)) filled++;
+    if (formData.location) filled++;
+    return Math.round((filled / total) * 100);
+  })();
 
-        {/* Header */}
-        <div className="animate-fade-in">
-          <h1 className="text-2xl sm:text-3xl font-bold text-dark">Resume Builder</h1>
-          <p className="text-text-secondary mt-1">Edit your resume sections, enhance with AI, and preview in real-time</p>
+  const progressLabel = completeness < 30 ? '🚀 Just getting started!' : completeness < 60 ? '🔥 Taking off!' : completeness < 90 ? '💪 Looking strong!' : '🎯 Almost perfect!';
+
+  return (
+    <div className="fixed inset-0 flex flex-col bg-white" style={{ top: 0, zIndex: 40 }}>
+      {/* ===== TOP TOOLBAR ===== */}
+      <div className="h-14 border-b border-gray-200 bg-white flex items-center justify-between px-4 shrink-0">
+        {/* Left: Back + Title */}
+        <div className="flex items-center gap-3">
+          <RouterLink to="/" className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
+            <ArrowLeft className="w-5 h-5 text-gray-600" />
+          </RouterLink>
+          <span className="font-bold text-gray-800 text-lg">ResumeBuilder</span>
         </div>
 
-        {/* Main Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Center: Progress */}
+        <div className="hidden md:flex items-center gap-3 bg-gray-50 rounded-full px-4 py-1.5">
+          <span className="text-sm font-medium text-gray-600">{progressLabel}</span>
+          <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
+            <div className="h-full bg-gradient-to-r from-green-400 to-emerald-500 rounded-full transition-all duration-500" style={{ width: `${completeness}%` }} />
+          </div>
+          <span className="text-sm font-bold text-emerald-600">{completeness}%</span>
+        </div>
 
-          {/* Left Column: Editor */}
-          <div className="flex flex-col gap-4">
-            {/* Tab bar */}
-            <div className="bg-white p-1.5 rounded-xl shadow-sm border border-border">
-              <div className="flex gap-1 overflow-x-auto">
-                {tabs.map((tab) => {
-                  const Icon = tab.icon;
-                  const isActive = activeSection === tab.id;
-                  return (
-                    <button
-                      key={tab.id}
-                      onClick={() => setActiveSection(tab.id)}
-                      className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap cursor-pointer
-                        ${isActive
-                          ? 'bg-primary text-white shadow-md shadow-primary/20'
-                          : 'text-text-secondary hover:bg-surface-alt hover:text-dark'
-                        }`}
-                    >
-                      <Icon className="w-4 h-4" />
-                      {tab.id}
-                    </button>
-                  );
-                })}
-              </div>
+        {/* Right: Actions */}
+        <div className="flex items-center gap-2">
+          <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-500">
+            <Moon className="w-5 h-5" />
+          </button>
+          <button
+            onClick={() => handleExport('PDF')}
+            className="flex items-center gap-2 bg-[#7C3AED] hover:bg-[#6D28D9] text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer"
+          >
+            <Sparkles className="w-4 h-4" />
+            <span className="hidden sm:inline">Speak & Generate Resume</span>
+          </button>
+          <button className="flex items-center gap-2 border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer">
+            <Save className="w-4 h-4" />
+            <span className="hidden sm:inline">Save</span>
+          </button>
+          <button
+            onClick={() => handleExport('PDF')}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-500 cursor-pointer"
+            title="Download PDF"
+          >
+            <Download className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+
+      {/* ===== MAIN BODY (Sidebar + Content) ===== */}
+      <div className="flex flex-1 overflow-hidden">
+        
+        {/* ===== LEFT SIDEBAR ===== */}
+        <div className="w-12 md:w-14 bg-gray-50 border-r border-gray-200 flex flex-col items-center py-4 gap-1 shrink-0 overflow-y-auto">
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeSection === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveSection(tab.id)}
+                title={tab.id}
+                className={`relative w-10 h-10 flex items-center justify-center rounded-xl transition-all cursor-pointer ${
+                  isActive
+                    ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/30'
+                    : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                <Icon className="w-5 h-5" />
+                {tab.badge && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                    {tab.badge}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* ===== CONTENT AREA (Editor + Preview side by side) ===== */}
+        <div className="flex-1 flex overflow-hidden">
+          
+          {/* ===== LEFT: EDITOR PANEL ===== */}
+          <div className="flex-1 min-w-0 overflow-y-auto p-6 lg:p-8 bg-white">
+            {/* Section Title */}
+            <div className="flex items-center gap-2 mb-6">
+              <h2 className="text-xl font-bold text-gray-800">{activeSection}</h2>
+              <button className="p-1 text-gray-400 hover:text-gray-600">
+                <FileText className="w-4 h-4" />
+              </button>
             </div>
+
+            {/* Parsing indicator */}
+            {parsingResume && (
+              <div className="mb-6 flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-sm text-blue-700">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Parsing your uploaded resume into structured fields...
+              </div>
+            )}
 
             {/* Editor content */}
-            <div className="flex-1 min-h-[400px]">
+            <div className="max-w-2xl">
               {renderEditor()}
-            </div>
-
-            {/* Export Buttons */}
-            <div className="bg-white p-4 rounded-xl shadow-sm border border-border flex flex-col sm:flex-row gap-3">
-              <button
-                onClick={() => handleExport('PDF')}
-                className="flex-1 flex items-center justify-center gap-2 bg-primary hover:bg-primary-light text-white px-4 py-3 rounded-xl font-semibold transition-colors cursor-pointer shadow-md shadow-primary/20"
-              >
-                <Download className="w-5 h-5" />
-                Download PDF
-              </button>
-              <button
-                onClick={() => handleExport('ATS')}
-                className="flex-1 flex items-center justify-center gap-2 border-2 border-border hover:border-primary/30 text-dark px-4 py-3 rounded-xl font-semibold transition-colors cursor-pointer"
-              >
-                <FileText className="w-5 h-5" />
-                Download ATS Version
-              </button>
             </div>
           </div>
 
-          {/* Right Column: Live Resume Preview */}
-          <div className="bg-surface-alt p-4 sm:p-6 rounded-2xl border border-border">
-            <h3 className="text-sm font-semibold text-text-secondary uppercase tracking-wider mb-4">Live Preview</h3>
-            <div className="bg-white shadow-xl rounded-sm border border-border/50 p-8 sm:p-10 text-dark min-h-[600px]" style={{ fontFamily: "'Inter', serif" }}>
-
-              {/* Resume Header */}
-              <div className="text-center border-b-2 border-dark pb-4 mb-5">
-                <h1 className="text-2xl font-bold uppercase tracking-widest mb-2">{formData.name || 'YOUR NAME'}</h1>
-                <div className="flex flex-wrap justify-center gap-3 text-xs text-text-secondary">
-                  {formData.location && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{formData.location}</span>}
-                  {formData.phone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{formData.phone}</span>}
-                  {formData.email && <span className="flex items-center gap-1"><Mail className="w-3 h-3" />{formData.email}</span>}
-                  {formData.links.filter(l => l.url).map((link, i) => (
-                    <span key={i} className="flex items-center gap-1"><Globe className="w-3 h-3" />{link.label}</span>
-                  ))}
+          {/* ===== RIGHT: LIVE PREVIEW PANEL ===== */}
+          <div className="hidden lg:flex flex-col w-[420px] xl:w-[480px] bg-gray-100 border-l border-gray-200 shrink-0">
+            {/* Preview toolbar */}
+            <div className="flex items-center justify-end gap-2 px-4 py-2 border-b border-gray-200 bg-white">
+              <button className="w-7 h-7 flex items-center justify-center rounded border border-gray-300 text-gray-500 hover:bg-gray-100 text-xs font-bold">−</button>
+              <span className="text-xs text-gray-500 font-medium">60%</span>
+              <button className="w-7 h-7 flex items-center justify-center rounded border border-gray-300 text-gray-500 hover:bg-gray-100 text-xs font-bold">+</button>
+            </div>
+            
+            {/* Preview scroll area */}
+            <div className="flex-1 overflow-y-auto p-4">
+              <div
+                id="resume-preview"
+                className="bg-white shadow-xl rounded-sm border border-gray-300 p-6 text-gray-900 mx-auto"
+                style={{ fontFamily: "'Inter', serif", width: '100%', minHeight: '600px', transformOrigin: 'top center', transform: 'scale(0.6)' }}
+              >
+                {/* Resume Header */}
+                <div className="text-center border-b-2 border-gray-800 pb-4 mb-5">
+                  <h1 className="text-2xl font-bold uppercase tracking-widest mb-2">{formData.name || 'YOUR NAME'}</h1>
+                  <div className="flex flex-wrap justify-center gap-3 text-xs text-gray-500">
+                    {formData.location && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{formData.location}</span>}
+                    {formData.phone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{formData.phone}</span>}
+                    {formData.email && <span className="flex items-center gap-1"><Mail className="w-3 h-3" />{formData.email}</span>}
+                    {formData.links.filter(l => l.url).map((link, i) => (
+                      <span key={i} className="flex items-center gap-1"><Globe className="w-3 h-3" />{link.url}</span>
+                    ))}
+                  </div>
                 </div>
-              </div>
 
-              {/* Education */}
-              {formData.education.some(e => e.degree) && (
-                <div className="mb-4">
-                  <h2 className="text-xs font-bold uppercase tracking-widest border-b border-border pb-1 mb-3 text-dark">Education</h2>
-                  {formData.education.filter(e => e.degree).map((edu) => (
-                    <div key={edu.id} className="mb-2">
-                      <div className="flex items-baseline justify-between mb-0.5">
-                        <h3 className="text-sm font-bold">{edu.university}</h3>
-                        <span className="text-[10px] text-text-muted font-medium">{edu.year}</span>
-                      </div>
-                      <div className="flex items-baseline justify-between">
-                        <span className="text-xs text-text-secondary">{edu.degree}</span>
-                        {edu.gpa && <span className="text-xs text-text-secondary">CGPA: {edu.gpa}</span>}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+                {/* Summary */}
+                {formData.summary && (
+                  <div className="mb-4">
+                    <h2 className="text-xs font-bold uppercase tracking-widest border-b border-gray-300 pb-1 mb-3">Summary</h2>
+                    <p className="text-xs text-gray-600 leading-relaxed">{formData.summary}</p>
+                  </div>
+                )}
 
-              {/* Experience */}
-              {formData.experiences.some(e => e.title) && (
-                <div className="mb-4">
-                  <h2 className="text-xs font-bold uppercase tracking-widest border-b border-border pb-1 mb-3 text-dark">Experience</h2>
-                  {formData.experiences.filter(e => e.title).map((exp) => (
-                    <div key={exp.id} className="mb-3">
-                      <div className="flex items-baseline justify-between mb-0.5">
-                        <h3 className="text-sm font-bold">{exp.title}</h3>
-                        <span className="text-[10px] text-text-muted font-medium">{exp.duration}</span>
+                {/* Education */}
+                {formData.education.some(e => e.degree) && (
+                  <div className="mb-4">
+                    <h2 className="text-xs font-bold uppercase tracking-widest border-b border-gray-300 pb-1 mb-3">Education</h2>
+                    {formData.education.filter(e => e.degree).map((edu) => (
+                      <div key={edu.id} className="mb-2">
+                        <div className="flex items-baseline justify-between mb-0.5">
+                          <h3 className="text-sm font-bold">{edu.university}</h3>
+                          <span className="text-[10px] text-gray-400 font-medium">{edu.year}</span>
+                        </div>
+                        <div className="flex items-baseline justify-between">
+                          <span className="text-xs text-gray-500">{edu.degree}{edu.gpa ? ` | GPA: ${edu.gpa}` : ''}</span>
+                        </div>
                       </div>
-                      <p className="text-xs text-text-secondary font-medium mb-1">{exp.company}</p>
-                      {exp.techStack && <p className="text-[10px] text-text-muted italic mb-1">{exp.techStack}</p>}
-                      <ul className="list-disc list-outside ml-4 space-y-0.5">
-                        {exp.bullets.filter(b => b.trim()).map((bullet, idx) => (
-                          <li key={idx} className="text-xs text-text-secondary pl-0.5">{bullet}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))}
-                </div>
-              )}
+                    ))}
+                  </div>
+                )}
 
-              {/* Projects */}
-              {formData.projects.some(p => p.name) && (
-                <div className="mb-4">
-                  <h2 className="text-xs font-bold uppercase tracking-widest border-b border-border pb-1 mb-3 text-dark">Projects</h2>
-                  {formData.projects.filter(p => p.name).map((proj) => (
-                    <div key={proj.id} className="mb-3">
-                      <div className="flex items-baseline justify-between mb-0.5">
-                        <h3 className="text-sm font-bold">{proj.name}</h3>
-                        {proj.link && <span className="text-[10px] text-text-muted">{proj.link}</span>}
-                      </div>
-                      {proj.tech && <p className="text-[10px] text-text-muted italic mb-1">{proj.tech}</p>}
-                      {proj.description && <p className="text-xs text-text-secondary mb-1">{proj.description}</p>}
-                      {proj.bullets && proj.bullets.some(b => b.trim()) && (
+                {/* Experience */}
+                {formData.experiences.some(e => e.title) && (
+                  <div className="mb-4">
+                    <h2 className="text-xs font-bold uppercase tracking-widest border-b border-gray-300 pb-1 mb-3">Experience</h2>
+                    {formData.experiences.filter(e => e.title).map((exp) => (
+                      <div key={exp.id} className="mb-3">
+                        <div className="flex items-baseline justify-between mb-0.5">
+                          <h3 className="text-sm font-bold">{exp.title}</h3>
+                          <span className="text-[10px] text-gray-400 font-medium">{exp.duration}</span>
+                        </div>
+                        <p className="text-xs text-gray-500 font-medium mb-1">{exp.company}</p>
+                        {exp.techStack && <p className="text-[10px] text-gray-400 italic mb-1">{exp.techStack}</p>}
                         <ul className="list-disc list-outside ml-4 space-y-0.5">
-                          {proj.bullets.filter(b => b.trim()).map((bullet, idx) => (
-                            <li key={idx} className="text-xs text-text-secondary pl-0.5">{bullet}</li>
+                          {exp.bullets.filter(b => b.trim()).map((bullet, idx) => (
+                            <li key={idx} className="text-xs text-gray-500 pl-0.5">{bullet}</li>
                           ))}
                         </ul>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Skills */}
-              {formData.skillCategories.some(c => c.skills) && (
-                <div className="mb-4">
-                  <h2 className="text-xs font-bold uppercase tracking-widest border-b border-border pb-1 mb-3 text-dark">Technical Skills</h2>
-                  {formData.skillCategories.filter(c => c.skills).map((cat) => (
-                    <p key={cat.id} className="text-xs text-text-secondary mb-0.5">
-                      <span className="font-semibold text-dark">{cat.category}: </span>{cat.skills}
-                    </p>
-                  ))}
-                </div>
-              )}
-
-              {/* Publications */}
-              {formData.publications.length > 0 && (
-                <div className="mb-4">
-                  <h2 className="text-xs font-bold uppercase tracking-widest border-b border-border pb-1 mb-3 text-dark">Publications</h2>
-                  {formData.publications.map((pub) => (
-                    <div key={pub.id} className="mb-2">
-                      <div className="flex items-baseline justify-between">
-                        <span className="text-xs font-semibold text-dark">{pub.title}</span>
-                        <span className="text-[10px] text-text-muted">{pub.status}</span>
                       </div>
-                      {pub.description && <p className="text-xs text-text-secondary">{pub.description}</p>}
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Achievements */}
-              {formData.achievements.length > 0 && (
-                <div className="mb-4">
-                  <h2 className="text-xs font-bold uppercase tracking-widest border-b border-border pb-1 mb-3 text-dark">Achievements & Activities</h2>
-                  <ul className="list-disc list-outside ml-4 space-y-0.5">
-                    {formData.achievements.map((ach) => (
-                      <li key={ach.id} className="text-xs text-text-secondary">{ach.text}</li>
                     ))}
-                  </ul>
-                </div>
-              )}
+                  </div>
+                )}
 
-              {/* Certifications */}
-              {formData.certifications.length > 0 && (
-                <div className="mb-4">
-                  <h2 className="text-xs font-bold uppercase tracking-widest border-b border-border pb-1 mb-3 text-dark">Certifications</h2>
-                  <p className="text-xs text-text-secondary">
-                    {formData.certifications.map(c => `${c.name}${c.issuer ? ` (${c.issuer})` : ''}`).join(' · ')}
-                  </p>
-                </div>
-              )}
+                {/* Projects */}
+                {formData.projects.some(p => p.name) && (
+                  <div className="mb-4">
+                    <h2 className="text-xs font-bold uppercase tracking-widest border-b border-gray-300 pb-1 mb-3">Projects</h2>
+                    {formData.projects.filter(p => p.name).map((proj) => (
+                      <div key={proj.id} className="mb-3">
+                        <div className="flex items-baseline justify-between mb-0.5">
+                          <h3 className="text-sm font-bold">{proj.name}</h3>
+                          {proj.link && <span className="text-[10px] text-gray-400">{proj.link}</span>}
+                        </div>
+                        {proj.tech && <p className="text-[10px] text-gray-400 italic mb-1">{proj.tech}</p>}
+                        {proj.description && <p className="text-xs text-gray-500 mb-1">{proj.description}</p>}
+                        {proj.bullets && proj.bullets.some(b => b.trim()) && (
+                          <ul className="list-disc list-outside ml-4 space-y-0.5">
+                            {proj.bullets.filter(b => b.trim()).map((bullet, idx) => (
+                              <li key={idx} className="text-xs text-gray-500 pl-0.5">{bullet}</li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
 
-              {/* Summary at bottom if present */}
-              {formData.summary && (
-                <div className="mt-4 pt-3 border-t border-border/50">
-                  <p className="text-xs text-text-secondary leading-relaxed italic">{formData.summary}</p>
-                </div>
-              )}
+                {/* Skills */}
+                {formData.skillCategories.some(c => c.skills) && (
+                  <div className="mb-4">
+                    <h2 className="text-xs font-bold uppercase tracking-widest border-b border-gray-300 pb-1 mb-3">Skills</h2>
+                    {formData.skillCategories.filter(c => c.skills).map((cat) => (
+                      <p key={cat.id} className="text-xs text-gray-500 mb-0.5">
+                        <span className="font-semibold text-gray-800">{cat.category}: </span>{cat.skills}
+                      </p>
+                    ))}
+                  </div>
+                )}
+
+                {/* Publications */}
+                {formData.publications.length > 0 && (
+                  <div className="mb-4">
+                    <h2 className="text-xs font-bold uppercase tracking-widest border-b border-gray-300 pb-1 mb-3">Publications</h2>
+                    {formData.publications.map((pub) => (
+                      <div key={pub.id} className="mb-2">
+                        <div className="flex items-baseline justify-between">
+                          <span className="text-xs font-semibold">{pub.title}</span>
+                          <span className="text-[10px] text-gray-400">{pub.status}</span>
+                        </div>
+                        {pub.description && <p className="text-xs text-gray-500">{pub.description}</p>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Certifications */}
+                {formData.certifications.length > 0 && (
+                  <div className="mb-4">
+                    <h2 className="text-xs font-bold uppercase tracking-widest border-b border-gray-300 pb-1 mb-3">Certifications</h2>
+                    <p className="text-xs text-gray-500">
+                      {formData.certifications.map(c => `${c.name}${c.issuer ? ` (${c.issuer})` : ''}`).join(' · ')}
+                    </p>
+                  </div>
+                )}
+
+                {/* Achievements */}
+                {formData.achievements.length > 0 && (
+                  <div className="mb-4">
+                    <h2 className="text-xs font-bold uppercase tracking-widest border-b border-gray-300 pb-1 mb-3">Honors & Awards</h2>
+                    <ul className="list-disc list-outside ml-4 space-y-0.5">
+                      {formData.achievements.map((ach) => (
+                        <li key={ach.id} className="text-xs text-gray-500">{ach.text}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
