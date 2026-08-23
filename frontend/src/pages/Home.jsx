@@ -73,13 +73,13 @@ export default function Home() {
               <div className="w-[280px] h-[280px] md:w-[340px] md:h-[340px] bg-[#E8E2DA] portrait-circle flex items-center justify-center relative z-10">
                 <Target className="w-24 h-24 text-[#9A3A0A] opacity-20" />
               </div>
-              {/* Connecting Arc to Card 2 */}
-              <svg className="absolute top-[85%] left-[50%] w-[350px] lg:w-[550px] h-[160px] overflow-visible pointer-events-none hidden md:block -z-10" viewBox="0 0 100 100" preserveAspectRatio="none">
-                <path d="M 0 0 C 0 80, 100 20, 100 100" fill="none" stroke="#F37338" strokeWidth="1.5" strokeDasharray="6 6" />
+              {/* Orbital Arc extending to next card */}
+              <svg className="absolute top-1/2 left-full w-full h-[400px] overflow-visible pointer-events-none hidden md:block -z-10" viewBox="0 0 200 400" preserveAspectRatio="none">
+                <path d="M 0 0 C 150 0, 150 400, 300 400" fill="none" stroke="#F37338" strokeWidth="1.5" />
               </svg>
             </div>
             
-            <div className="flex-1 flex flex-col justify-center max-w-md">
+            <div className="flex-1 flex flex-col justify-center max-w-md relative z-10">
               <div className="eyebrow text-[#696969] flex items-center gap-2 mb-4">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#CF4500]"></span>
                 ANALYSIS
@@ -97,13 +97,13 @@ export default function Home() {
               <div className="w-[280px] h-[280px] md:w-[340px] md:h-[340px] bg-[#E8E2DA] portrait-circle flex items-center justify-center relative z-10">
                 <ShieldCheck className="w-24 h-24 text-[#3860BE] opacity-20" />
               </div>
-              {/* Connecting Arc to Card 3 */}
-              <svg className="absolute top-[85%] right-[50%] w-[350px] lg:w-[550px] h-[160px] overflow-visible pointer-events-none hidden md:block -z-10" viewBox="0 0 100 100" preserveAspectRatio="none">
-                <path d="M 100 0 C 100 80, 0 20, 0 100" fill="none" stroke="#F37338" strokeWidth="1.5" strokeDasharray="6 6" />
+              {/* Orbital Arc extending to next card */}
+              <svg className="absolute top-1/2 right-full w-full h-[400px] overflow-visible pointer-events-none hidden md:block -z-10" viewBox="0 0 200 400" preserveAspectRatio="none">
+                <path d="M 200 0 C 50 0, 50 400, -100 400" fill="none" stroke="#F37338" strokeWidth="1.5" />
               </svg>
             </div>
             
-            <div className="flex-1 flex flex-col justify-center max-w-md">
+            <div className="flex-1 flex flex-col justify-center max-w-md relative z-10">
               <div className="eyebrow text-[#696969] flex items-center gap-2 mb-4">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#CF4500]"></span>
                 COMPLIANCE
