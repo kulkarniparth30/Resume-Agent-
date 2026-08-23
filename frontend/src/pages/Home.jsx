@@ -18,10 +18,10 @@ export default function Home() {
                 Go where you belong.
               </h1>
               <div className="flex flex-col sm:flex-row items-center md:items-start gap-4">
-                <Link to="/upload" className="btn-outline">
+                <Link to="/upload" className="px-6 py-2.5 bg-white text-[#141413] font-medium rounded-full hover:bg-gray-100 transition-colors inline-block">
                   Get Started
                 </Link>
-                <Link to="/dashboard" className="btn-ink !bg-[#262627] !border-[#262627]">
+                <Link to="/dashboard" className="px-6 py-2.5 bg-[#262627] text-white font-medium rounded-full border border-gray-600 hover:bg-gray-800 transition-colors inline-block">
                   View Demo
                 </Link>
               </div>
@@ -73,13 +73,6 @@ export default function Home() {
               <div className="w-[280px] h-[280px] md:w-[340px] md:h-[340px] bg-[#E8E2DA] portrait-circle flex items-center justify-center">
                 <Target className="w-24 h-24 text-[#9A3A0A] opacity-20" />
               </div>
-              <button className="satellite-cta absolute bottom-4 right-0 transform translate-x-1/3 translate-y-1/3">
-                <ArrowRight className="w-6 h-6 text-[#141413]" />
-              </button>
-              {/* Orbital Arc extending to next card */}
-              <svg className="absolute top-1/2 left-full w-full h-[400px] overflow-visible pointer-events-none hidden md:block" viewBox="0 0 200 400" preserveAspectRatio="none">
-                <path d="M 0 0 C 150 0, 150 400, 300 400" fill="none" stroke="#F37338" strokeWidth="1.5" />
-              </svg>
             </div>
             
             <div className="flex-1 flex flex-col justify-center max-w-md">
@@ -100,13 +93,6 @@ export default function Home() {
               <div className="w-[280px] h-[280px] md:w-[340px] md:h-[340px] bg-[#E8E2DA] portrait-circle flex items-center justify-center">
                 <ShieldCheck className="w-24 h-24 text-[#3860BE] opacity-20" />
               </div>
-              <button className="satellite-cta absolute bottom-4 left-0 transform -translate-x-1/3 translate-y-1/3">
-                <ArrowRight className="w-6 h-6 text-[#141413]" />
-              </button>
-              {/* Orbital Arc extending to next card */}
-              <svg className="absolute top-1/2 right-full w-full h-[400px] overflow-visible pointer-events-none hidden md:block" viewBox="0 0 200 400" preserveAspectRatio="none">
-                <path d="M 200 0 C 50 0, 50 400, -100 400" fill="none" stroke="#F37338" strokeWidth="1.5" />
-              </svg>
             </div>
             
             <div className="flex-1 flex flex-col justify-center max-w-md">
@@ -127,9 +113,6 @@ export default function Home() {
               <div className="w-[280px] h-[280px] md:w-[340px] md:h-[340px] bg-[#E8E2DA] portrait-circle flex items-center justify-center">
                 <Briefcase className="w-24 h-24 text-[#CF4500] opacity-20" />
               </div>
-              <button className="satellite-cta absolute bottom-4 right-0 transform translate-x-1/3 translate-y-1/3">
-                <ArrowRight className="w-6 h-6 text-[#141413]" />
-              </button>
             </div>
             
             <div className="flex-1 flex flex-col justify-center max-w-md">
