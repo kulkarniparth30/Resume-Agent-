@@ -176,10 +176,10 @@ export default function AuthModal() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-primary hover:bg-primary-light text-white font-semibold rounded-xl transition-all shadow-md shadow-primary/20 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 mt-2"
+              className="w-full py-3.5 bg-[#1E40AF] hover:bg-[#1D4ED8] text-white font-bold rounded-xl transition-all shadow-md shadow-blue-900/20 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 mt-2 text-sm"
             >
               {loading ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
+                <Loader2 className="w-5 h-5 animate-spin text-white" />
               ) : tab === 'signup' ? (
                 'Create Account'
               ) : (

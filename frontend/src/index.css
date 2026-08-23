@@ -58,6 +58,21 @@ body {
   min-height: 100vh;
 }
 
+/* Bulletproof utility classes */
+.bg-primary { background-color: #1E40AF !important; }
+.bg-primary-light { background-color: #2563EB !important; }
+.bg-primary-dark { background-color: #1E3A8A !important; }
+.text-primary { color: #1E40AF !important; }
+.text-primary-light { color: #2563EB !important; }
+.border-primary { border-color: #1E40AF !important; }
+.bg-dark { background-color: #0F172A !important; }
+.text-dark { color: #0F172A !important; }
+.bg-surface { background-color: #F8FAFC !important; }
+.bg-surface-alt { background-color: #F1F5F9 !important; }
+.border-border { border-color: #E2E8F0 !important; }
+.text-text-secondary { color: #64748B !important; }
+.text-text-muted { color: #94A3B8 !important; }
+
 /* Typography Overrides */
 h1, .h1 {
   font-weight: 500;
