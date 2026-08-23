@@ -69,12 +69,8 @@ export default function ResumeBuilder() {
   const saveResumeToStore = useAgentStore((s) => s.saveResume);
   const deleteResumeFromStore = useAgentStore((s) => s.deleteResume);
 
-  // Auto-load last edited resume if available, or generate a fresh ID
   useEffect(() => {
-    if (savedResumes.length > 0 && !currentResumeId && !formData.name) {
-      // Keep blank initially, but store ID for saving
-      setCurrentResumeId(Date.now().toString());
-    } else if (!currentResumeId) {
+    if (!currentResumeId) {
       setCurrentResumeId(Date.now().toString());
     }
   }, []);
@@ -597,7 +593,6 @@ export default function ResumeBuilder() {
 
             {formData.experiences.map((exp, expIdx) => (
               <div key={exp.id} className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4 relative">
-                {/* Header inside card */}
                 <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-bold text-slate-800">Experience {expIdx + 1}</span>
@@ -891,7 +886,6 @@ export default function ResumeBuilder() {
       case 'Skills':
         return (
           <div className="space-y-6 animate-fade-in">
-            {/* Top Add button matching screenshot */}
             <button
               type="button"
               onClick={() => addToList('skillCategories', { category: `Category ${formData.skillCategories.length + 1}`, skills: '' })}
@@ -1457,7 +1451,7 @@ export default function ResumeBuilder() {
   return (
     <div className="flex flex-col bg-white" style={{ minHeight: 'calc(100vh - 80px)' }}>
       
-      {/* ===== TOP RESUME ACTION BAR (Save, History, 1-Page Mode, Title) ===== */}
+      {/* ===== TOP RESUME ACTION BAR (Title, 1-Page Fit, History, Save, Download PDF) ===== */}
       <div className="h-14 border-b border-slate-200 bg-white flex items-center justify-between px-4 sm:px-6 shrink-0 z-10 gap-3">
         {/* Left: Resume Title Editor */}
         <div className="flex items-center gap-2 min-w-0">
@@ -1466,12 +1460,12 @@ export default function ResumeBuilder() {
             type="text"
             value={resumeTitle}
             onChange={(e) => setResumeTitle(e.target.value)}
-            className="font-bold text-slate-800 text-sm sm:text-base border-b border-transparent hover:border-slate-300 focus:border-emerald-500 outline-none px-1 py-0.5 rounded transition-all bg-transparent truncate max-w-[200px] sm:max-w-[300px]"
+            className="font-bold text-slate-800 text-sm sm:text-base border-b border-transparent hover:border-slate-300 focus:border-emerald-500 outline-none px-1 py-0.5 rounded transition-all bg-transparent truncate max-w-[180px] sm:max-w-[260px]"
             title="Click to rename resume"
           />
         </div>
 
-        {/* Right Controls: 1-Page toggle, Save Draft, Resume History */}
+        {/* Right Controls: 1-Page toggle, Saved Resumes, Save, Download PDF */}
         <div className="flex items-center gap-2 shrink-0">
           {/* 1-Page A4 Mode Toggle */}
           <button
@@ -1513,7 +1507,7 @@ export default function ResumeBuilder() {
             className={`flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer shadow-sm ${
               saveSuccess
                 ? 'bg-emerald-600 text-white'
-                : 'bg-[#0F172A] hover:bg-[#1E293B] text-white'
+                : 'bg-white hover:bg-slate-50 text-slate-800 border border-slate-300'
             }`}
           >
             {isSaving ? (
@@ -1521,9 +1515,20 @@ export default function ResumeBuilder() {
             ) : saveSuccess ? (
               <CheckCheck className="w-3.5 h-3.5 text-emerald-200" />
             ) : (
-              <Save className="w-3.5 h-3.5" />
+              <Save className="w-3.5 h-3.5 text-slate-600" />
             )}
             <span>{isSaving ? 'Saving...' : saveSuccess ? 'Saved!' : 'Save'}</span>
+          </button>
+
+          {/* Download PDF button right at the side of Save */}
+          <button
+            type="button"
+            onClick={() => handleExport('PDF')}
+            className="flex items-center gap-1.5 px-4 py-1.5 bg-[#0F172A] hover:bg-[#1E293B] text-white rounded-xl text-xs font-semibold shadow-sm transition-all cursor-pointer"
+            title="Download formatted A4 PDF resume"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>Download PDF</span>
           </button>
         </div>
       </div>
@@ -1562,7 +1567,7 @@ export default function ResumeBuilder() {
           
           {/* ===== LEFT: FORM EDITOR ===== */}
           <div className="flex-1 min-w-0 overflow-y-auto p-6 sm:p-8 bg-white border-r border-slate-200">
-            <div className="max-w-3xl mx-auto space-y-6">
+            <div className="max-w-3xl mx-auto space-y-6 pb-12">
               {/* Section Heading matching screenshot */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -1576,26 +1581,6 @@ export default function ResumeBuilder() {
 
               {/* Dynamic Editor Content */}
               {renderEditor()}
-
-              {/* Export Buttons at Bottom */}
-              <div className="pt-6 pb-12 flex flex-col sm:flex-row gap-3">
-                <button
-                  type="button"
-                  onClick={() => handleExport('PDF')}
-                  className="flex-1 flex items-center justify-center gap-2 bg-[#0F172A] hover:bg-[#1E293B] text-white px-5 py-3 rounded-xl font-semibold text-sm transition-all shadow-sm cursor-pointer"
-                >
-                  <Download className="w-4 h-4" />
-                  Download Single-Page PDF
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleExport('ATS')}
-                  className="flex-1 flex items-center justify-center gap-2 border border-slate-300 hover:bg-slate-50 text-slate-700 px-5 py-3 rounded-xl font-semibold text-sm transition-all cursor-pointer"
-                >
-                  <FileText className="w-4 h-4" />
-                  Download ATS Version
-                </button>
-              </div>
             </div>
           </div>
 
