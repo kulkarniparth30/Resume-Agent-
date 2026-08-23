@@ -2,6 +2,21 @@
 @import url('https://fonts.googleapis.com/css2?family=Sofia+Sans:wght@400;500;700&display=swap');
 
 @theme {
+  --color-primary: #1E40AF;
+  --color-primary-light: #2563EB;
+  --color-primary-dark: #1E3A8A;
+  --color-dark: #0F172A;
+  --color-dark-lighter: #334155;
+  --color-surface: #F8FAFC;
+  --color-surface-alt: #F1F5F9;
+  --color-border: #E2E8F0;
+  --color-text-secondary: #64748B;
+  --color-text-muted: #94A3B8;
+  --color-accent: #7C3AED;
+  --color-success: #059669;
+  --color-warning: #D97706;
+  --color-danger: #DC2626;
+
   --color-mc-red: #EB001B;
   --color-mc-yellow: #F79E1B;
   

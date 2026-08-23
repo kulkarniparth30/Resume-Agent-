@@ -25,9 +25,9 @@ function ProtectedRoute({ children }) {
         </p>
         <button
           onClick={() => openAuthModal('signup')}
-          className="flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary-light text-white font-bold rounded-xl transition-all shadow-md shadow-primary/20 cursor-pointer"
+          className="flex items-center gap-2 px-6 py-3 bg-[#1E40AF] hover:bg-[#1D4ED8] text-white font-bold rounded-xl transition-all shadow-lg hover:shadow-xl cursor-pointer"
         >
-          <Sparkles className="w-4 h-4" />
+          <Sparkles className="w-4 h-4 text-white" />
           Sign In / Create Account
         </button>
       </div>
