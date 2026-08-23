@@ -79,7 +79,7 @@ export default function Home() {
               </svg>
             </div>
             
-            <div className="flex-1 flex flex-col justify-center max-w-md relative z-10">
+            <div className="flex-1 flex flex-col justify-center max-w-md relative z-10 md:ml-16 lg:ml-32">
               <div className="eyebrow text-[#696969] flex items-center gap-2 mb-4">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#CF4500]"></span>
                 ANALYSIS
@@ -103,7 +103,7 @@ export default function Home() {
               </svg>
             </div>
             
-            <div className="flex-1 flex flex-col justify-center max-w-md relative z-10">
+            <div className="flex-1 flex flex-col justify-center max-w-md relative z-10 md:mr-16 lg:mr-32">
               <div className="eyebrow text-[#696969] flex items-center gap-2 mb-4">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#CF4500]"></span>
                 COMPLIANCE
