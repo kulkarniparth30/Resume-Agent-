@@ -12,6 +12,7 @@ class RoadmapRequest(BaseModel):
     rank_score: int = 50
 
 @router.post("/generate")
+@router.post("/generate/")
 async def generate(req: RoadmapRequest):
     roadmap = await generate_roadmap(
         candidate_skills=req.candidate_skills,

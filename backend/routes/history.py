@@ -17,6 +17,7 @@ async def get_current_user_optional(authorization: Optional[str] = Header(None))
     token = authorization.replace("Bearer ", "").strip()
     return get_user_from_token(token)
 
+@router.get("")
 @router.get("/")
 async def get_history(user: Optional[dict] = Depends(get_current_user_optional)):
     user_id = user.get("id") if user else None
@@ -28,6 +29,7 @@ async def get_history(user: Optional[dict] = Depends(get_current_user_optional))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.post("")
 @router.post("/")
 async def create_history_entry(
     req: SaveAnalysisRequest,
@@ -47,6 +49,7 @@ async def create_history_entry(
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.delete("/{analysis_id}")
+@router.delete("/{analysis_id}/")
 async def remove_history_entry(
     analysis_id: str,
     user: Optional[dict] = Depends(get_current_user_optional)

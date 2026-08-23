@@ -16,6 +16,7 @@ class RankMultipleRequest(BaseModel):
     jd_text: str
     job_role: str
 
+@router.post("")
 @router.post("/")
 async def analyse(req: AnalyseRequest):
     result = await analyse_resume(
@@ -27,6 +28,7 @@ async def analyse(req: AnalyseRequest):
     return result
 
 @router.post("/rank-multiple")
+@router.post("/rank-multiple/")
 async def rank_multiple(req: RankMultipleRequest):
     results = await rank_multiple_resumes(
         resumes=req.resumes,

@@ -4,6 +4,7 @@ from typing import Optional
 
 router = APIRouter()
 
+@router.get("")
 @router.get("/")
 async def get_jobs(
     role: str, 
