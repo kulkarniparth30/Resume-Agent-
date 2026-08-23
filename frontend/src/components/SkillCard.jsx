@@ -1,49 +1,76 @@
-import { X } from 'lucide-react';
+import { X, Sparkles } from 'lucide-react';
 
 const variants = {
   owned: {
-    bg: 'bg-success/10',
-    text: 'text-success',
-    border: 'border-success/20',
-    dot: 'bg-success',
+    bg: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    dot: 'bg-emerald-500',
+  },
+  matching: {
+    bg: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    dot: 'bg-emerald-500',
   },
   suggested: {
-    bg: 'bg-primary/10',
-    text: 'text-primary',
-    border: 'border-primary/20',
-    dot: 'bg-primary',
+    bg: 'bg-blue-50 text-blue-700 border-blue-200',
+    dot: 'bg-blue-500',
   },
   missing: {
-    bg: 'bg-danger/10',
-    text: 'text-danger',
-    border: 'border-danger/20',
-    dot: 'bg-danger',
+    bg: 'bg-red-50 text-red-700 border-red-200',
+    dot: 'bg-red-500',
   },
   neutral: {
-    bg: 'bg-gray-100',
-    text: 'text-dark-lighter',
-    border: 'border-border',
-    dot: 'bg-dark-lighter',
+    bg: 'bg-slate-100 text-slate-700 border-slate-200',
+    dot: 'bg-slate-500',
   },
 };
 
-export default function SkillCard({ name, variant = 'neutral', removable = false, onRemove, onClick, className = '' }) {
-  const v = variants[variant] || variants.neutral;
+export default function SkillCard({
+  name,
+  skill,
+  children,
+  variant,
+  type = 'neutral',
+  removable = false,
+  onRemove,
+  onClick,
+  onLearnClick,
+  className = ''
+}) {
+  // Resolve skill name from props
+  const rawSkill = name || skill || children || '';
+  const skillLabel = typeof rawSkill === 'object' ? (rawSkill.name || rawSkill.skill || JSON.stringify(rawSkill)) : String(rawSkill);
+
+  // Resolve variant styling
+  const chosenVariantKey = variant || type || 'neutral';
+  const v = variants[chosenVariantKey] || variants.neutral;
+
+  const handleClick = (e) => {
+    if (onClick) onClick(skillLabel, e);
+    if (onLearnClick) onLearnClick(skillLabel, e);
+  };
+
+  const isClickable = Boolean(onClick || onLearnClick);
 
   return (
     <span
-      onClick={onClick}
-      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border transition-all duration-200 ${v.bg} ${v.text} ${v.border} ${
-        onClick ? 'cursor-pointer hover:shadow-sm hover:scale-105' : ''
+      onClick={isClickable ? handleClick : undefined}
+      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all duration-200 select-none ${v.bg} ${
+        isClickable ? 'cursor-pointer hover:shadow-sm hover:scale-105' : ''
       } ${className}`}
+      title={onLearnClick ? `Click to find learning resources for ${skillLabel}` : undefined}
     >
       <span className={`w-1.5 h-1.5 rounded-full ${v.dot}`} />
-      {name}
+      <span>{skillLabel}</span>
+      {onLearnClick && (
+        <span className="text-[10px] text-red-500 underline ml-0.5 font-medium hover:text-red-700">
+          Learn →
+        </span>
+      )}
       {removable && onRemove && (
         <button
+          type="button"
           onClick={(e) => {
             e.stopPropagation();
-            onRemove(name);
+            onRemove(skillLabel);
           }}
           className="ml-0.5 p-0.5 rounded-full hover:bg-black/10 transition-colors cursor-pointer"
         >
