@@ -13,9 +13,7 @@ services:
         sync: false # Set in Render dashboard
       - key: SUPABASE_URL
         sync: false
-      - key: SUPABASE_SERVICE_ROLE_KEY
-        sync: false
-      - key: SUPABASE_JWT_SECRET
+      - key: SUPABASE_KEY
         sync: false
       - key: PYTHONUNBUFFERED
         value: "1"
