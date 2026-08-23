@@ -39,6 +39,12 @@ backend/models/
 backend/data/raw/
 *.csv
 *.json
+!package.json
+!package-lock.json
+!*/package.json
+!*/package-lock.json
+!**/package.json
+!**/package-lock.json
 !backend/data/processed/skill_aliases.json
 !backend/data/processed/onet_processed.json
 

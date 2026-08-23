@@ -6,13 +6,16 @@
 FROM node:20-alpine AS frontend-builder
 WORKDIR /app/frontend
 
-COPY frontend/package*.json ./
-RUN npm install
+# Copy package files and install dependencies
+COPY frontend/package.json ./
+COPY frontend/package-lock.json* ./
+RUN npm install --no-audit --no-fund
 
+# Copy frontend source and build production bundle
 COPY frontend/ ./
 RUN npm run build
 
-# Stage 2: Python FastAPI Backend + Serve Frontend
+# Stage 2: Python FastAPI Backend + Serve Built Frontend
 FROM python:3.11-slim
 
 WORKDIR /app
@@ -21,7 +24,7 @@ WORKDIR /app
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 
-# Install system dependencies if required
+# Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
@@ -39,7 +42,7 @@ COPY --from=frontend-builder /app/frontend/dist ./static
 # Create uploads directory
 RUN mkdir -p uploads
 
-# Expose port (Render automatically sets $PORT environment variable)
+# Expose port (Render sets $PORT dynamically)
 ENV PORT=8000
 EXPOSE 8000
 
