@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Sparkles, Download, FileText, Briefcase, GraduationCap, Code2,
   User, X, CheckCircle2, Plus, Mail, Phone, Globe,
   Loader2, MapPin, Award, BookOpen, Trophy, Zap, Trash2,
-  ArrowUp, ArrowDown, Edit3, Mic, Check
+  Edit3, Mic, Check, History, Save, RotateCcw, Copy, Layout,
+  SlidersHorizontal, CheckCheck
 } from 'lucide-react';
 import { enhanceSection, enhanceBullet } from '../api/ai';
 import useAgentStore from '../store/useAgentStore';
@@ -48,9 +49,15 @@ const nextId = () => ++_nextId;
 export default function ResumeBuilder() {
   const [activeSection, setActiveSection] = useState('Experience');
   const [formData, setFormData] = useState(INITIAL_DATA);
+  const [resumeTitle, setResumeTitle] = useState('My Resume');
+  const [currentResumeId, setCurrentResumeId] = useState(null);
   const [enhancing, setEnhancing] = useState({});
   const [appliedImprovements, setAppliedImprovements] = useState(new Set());
   const [zoomLevel, setZoomLevel] = useState(60);
+  const [isOnePageMode, setIsOnePageMode] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
 
   // Per-section AI assistant states
   const [aiBoxState, setAiBoxState] = useState({});
@@ -58,6 +65,19 @@ export default function ResumeBuilder() {
   const jdText = useAgentStore((s) => s.jdText);
   const jobRole = useAgentStore((s) => s.jobRole);
   const analysisResult = useAgentStore((s) => s.analysisResult);
+  const savedResumes = useAgentStore((s) => s.savedResumes);
+  const saveResumeToStore = useAgentStore((s) => s.saveResume);
+  const deleteResumeFromStore = useAgentStore((s) => s.deleteResume);
+
+  // Auto-load last edited resume if available, or generate a fresh ID
+  useEffect(() => {
+    if (savedResumes.length > 0 && !currentResumeId && !formData.name) {
+      // Keep blank initially, but store ID for saving
+      setCurrentResumeId(Date.now().toString());
+    } else if (!currentResumeId) {
+      setCurrentResumeId(Date.now().toString());
+    }
+  }, []);
 
   const setEnhancingKey = (key, val) => setEnhancing(prev => ({ ...prev, [key]: val }));
 
@@ -92,18 +112,17 @@ export default function ResumeBuilder() {
           Elevated: elevated
         },
         improvements: [
-          'Highlights core computer science coursework and technical aptitude.',
-          'Recruiters see direct relevance to technical roles and a strong academic/practical foundation.'
+          'Highlights core competencies and technical coursework.',
+          'Quantifies achievements and aligns phrasing with ATS standards.'
         ],
         proTips: [
-          'If you have specific courses or projects that stand out, consider mentioning them by name.',
-          'If you are involved in any clubs, competitions, or hackathons, add a brief mention.'
+          'Highlight specific metrics, tooling, and measurable outcomes.',
+          'Keep bullet points concise for clean 1-page fit.'
         ],
         onApply: onApplyCallback
       });
     } catch (err) {
       console.error('Enhancement failed:', err);
-      // Fallback preview
       updateAiBox(boxId, {
         isOpen: true,
         activeTab: 'Essential',
@@ -208,6 +227,48 @@ export default function ResumeBuilder() {
     }));
   };
 
+  // Save current resume draft to history
+  const handleSaveResume = () => {
+    setIsSaving(true);
+    const id = currentResumeId || Date.now().toString();
+    const title = resumeTitle || `${formData.name || 'Untitled Resume'} - ${new Date().toLocaleDateString()}`;
+    
+    saveResumeToStore({
+      id,
+      title,
+      formData,
+      jobRole: jobRole || '',
+      updatedAt: new Date().toISOString()
+    });
+
+    setCurrentResumeId(id);
+    setTimeout(() => {
+      setIsSaving(false);
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 2500);
+    }, 400);
+  };
+
+  // Load a saved resume from history
+  const handleLoadResume = (savedItem) => {
+    if (savedItem && savedItem.formData) {
+      setFormData(savedItem.formData);
+      setResumeTitle(savedItem.title || 'My Resume');
+      setCurrentResumeId(savedItem.id);
+      setShowHistoryModal(false);
+    }
+  };
+
+  // Create new fresh blank resume
+  const handleNewResume = () => {
+    if (confirm('Start a new blank resume? Make sure you saved your current work first.')) {
+      setFormData(INITIAL_DATA);
+      setResumeTitle(`Resume ${savedResumes.length + 1}`);
+      setCurrentResumeId(Date.now().toString());
+      setShowHistoryModal(false);
+    }
+  };
+
   const handleExport = (type) => {
     const previewEl = document.getElementById('resume-preview');
     if (!previewEl) { window.print(); return; }
@@ -216,21 +277,44 @@ export default function ResumeBuilder() {
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Resume - ${formData.name || 'Parth Kulkarni'}</title>
+          <title>${resumeTitle} - ${formData.name || 'Resume'}</title>
           <link rel="preconnect" href="https://fonts.googleapis.com">
           <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
           <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
           <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
-            body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; padding: 32px 40px; color: #111827; background: #fff; line-height: 1.4; }
+            html, body {
+              width: 100%;
+              height: 100%;
+              background: #fff;
+              font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+              color: #111827;
+              line-height: 1.35;
+            }
+            body {
+              padding: ${isOnePageMode ? '24px 36px' : '36px 44px'};
+            }
             @media print {
-              body { padding: 0; }
-              @page { margin: 0.4in; size: A4 portrait; }
+              @page {
+                size: A4 portrait;
+                margin: ${isOnePageMode ? '6mm 10mm' : '10mm 12mm'};
+              }
+              body {
+                padding: 0;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+              }
+              #resume-preview {
+                box-shadow: none !important;
+                border: none !important;
+                max-height: 100% !important;
+                page-break-after: avoid;
+              }
             }
           </style>
         </head>
         <body>
-          ${previewEl.innerHTML}
+          <div id="resume-preview">${previewEl.innerHTML}</div>
         </body>
       </html>
     `);
@@ -1371,271 +1455,476 @@ export default function ResumeBuilder() {
   };
 
   return (
-    <div className="flex bg-white" style={{ minHeight: 'calc(100vh - 80px)' }}>
-      {/* ===== LEFT ICON SIDEBAR ===== */}
-      <div className="w-14 bg-white border-r border-slate-200 flex flex-col items-center py-4 gap-2 shrink-0 select-none">
-        {tabs.map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeSection === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveSection(tab.id)}
-              title={tab.id}
-              className={`relative w-10 h-10 flex items-center justify-center rounded-xl transition-all cursor-pointer ${
-                isActive
-                  ? 'bg-[#10B981] text-white shadow-sm'
-                  : 'text-slate-400 hover:text-slate-700 hover:bg-slate-50'
-              }`}
-            >
-              <Icon className="w-5 h-5 stroke-[1.75]" />
-              {tab.badge && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-                  {tab.badge}
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* ===== CONTENT AREA (Editor on Left, Live Preview on Right) ===== */}
-      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
-        
-        {/* ===== LEFT: FORM EDITOR ===== */}
-        <div className="flex-1 min-w-0 overflow-y-auto p-6 sm:p-8 bg-white border-r border-slate-200">
-          <div className="max-w-3xl mx-auto space-y-6">
-            {/* Section Heading matching screenshot */}
-            <div className="flex items-center gap-2">
-              <h2 className="text-xl font-bold text-slate-900">{activeSection}</h2>
-              <Edit3 className="w-4 h-4 text-slate-400" />
-            </div>
-
-            {/* Dynamic Editor Content */}
-            {renderEditor()}
-
-            {/* Export Buttons at Bottom */}
-            <div className="pt-6 pb-12 flex flex-col sm:flex-row gap-3">
-              <button
-                type="button"
-                onClick={() => handleExport('PDF')}
-                className="flex-1 flex items-center justify-center gap-2 bg-[#0F172A] hover:bg-[#1E293B] text-white px-5 py-3 rounded-xl font-semibold text-sm transition-all shadow-sm cursor-pointer"
-              >
-                <Download className="w-4 h-4" />
-                Download PDF
-              </button>
-              <button
-                type="button"
-                onClick={() => handleExport('ATS')}
-                className="flex-1 flex items-center justify-center gap-2 border border-slate-300 hover:bg-slate-50 text-slate-700 px-5 py-3 rounded-xl font-semibold text-sm transition-all cursor-pointer"
-              >
-                <FileText className="w-4 h-4" />
-                Download ATS Version
-              </button>
-            </div>
-          </div>
+    <div className="flex flex-col bg-white" style={{ minHeight: 'calc(100vh - 80px)' }}>
+      
+      {/* ===== TOP RESUME ACTION BAR (Save, History, 1-Page Mode, Title) ===== */}
+      <div className="h-14 border-b border-slate-200 bg-white flex items-center justify-between px-4 sm:px-6 shrink-0 z-10 gap-3">
+        {/* Left: Resume Title Editor */}
+        <div className="flex items-center gap-2 min-w-0">
+          <FileText className="w-4 h-4 text-emerald-600 shrink-0" />
+          <input
+            type="text"
+            value={resumeTitle}
+            onChange={(e) => setResumeTitle(e.target.value)}
+            className="font-bold text-slate-800 text-sm sm:text-base border-b border-transparent hover:border-slate-300 focus:border-emerald-500 outline-none px-1 py-0.5 rounded transition-all bg-transparent truncate max-w-[200px] sm:max-w-[300px]"
+            title="Click to rename resume"
+          />
         </div>
 
-        {/* ===== RIGHT: A4 LIVE RESUME PREVIEW ===== */}
-        <div className="hidden lg:flex flex-col w-[480px] xl:w-[540px] bg-slate-100 shrink-0">
-          {/* Zoom Toolbar */}
-          <div className="flex items-center justify-end gap-2 px-4 py-2 bg-white border-b border-slate-200">
-            <button
-              type="button"
-              onClick={() => setZoomLevel(prev => Math.max(40, prev - 10))}
-              className="w-7 h-7 flex items-center justify-center rounded border border-slate-300 text-slate-600 hover:bg-slate-50 text-xs font-bold"
-            >
-              −
-            </button>
-            <span className="text-xs text-slate-600 font-medium w-10 text-center">{zoomLevel}%</span>
-            <button
-              type="button"
-              onClick={() => setZoomLevel(prev => Math.min(100, prev + 10))}
-              className="w-7 h-7 flex items-center justify-center rounded border border-slate-300 text-slate-600 hover:bg-slate-50 text-xs font-bold"
-            >
-              +
-            </button>
-          </div>
+        {/* Right Controls: 1-Page toggle, Save Draft, Resume History */}
+        <div className="flex items-center gap-2 shrink-0">
+          {/* 1-Page A4 Mode Toggle */}
+          <button
+            type="button"
+            onClick={() => setIsOnePageMode(!isOnePageMode)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
+              isOnePageMode
+                ? 'bg-emerald-50 text-emerald-700 border-emerald-200 shadow-sm'
+                : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+            }`}
+            title="Fit content to a single standard A4 page"
+          >
+            <Layout className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">1-Page Fit</span>
+            <span className={`w-2 h-2 rounded-full ${isOnePageMode ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+          </button>
 
-          {/* Scrollable Preview Canvas */}
-          <div className="flex-1 overflow-y-auto p-4 sm:p-6 flex justify-center">
-            <div
-              id="resume-preview"
-              className="bg-white shadow-xl border border-slate-300 text-slate-900 rounded-sm"
-              style={{
-                width: '100%',
-                maxWidth: '650px',
-                minHeight: '850px',
-                padding: '40px 48px',
-                fontFamily: "'Inter', sans-serif"
-              }}
-            >
-              {/* Header */}
-              <div className="text-center pb-4 mb-4 border-b border-slate-800">
-                <h1 className="text-2xl font-bold tracking-tight text-slate-950 uppercase mb-1">
-                  {formData.name || 'YOUR NAME'}
-                </h1>
-                <div className="flex flex-wrap justify-center gap-x-3 gap-y-1 text-[11px] text-slate-600">
-                  {formData.location && <span>{formData.location}</span>}
-                  {formData.phone && <span>{formData.phone}</span>}
-                  {formData.email && <span>{formData.email}</span>}
-                </div>
-                {formData.links.some(l => l.url) && (
-                  <div className="flex flex-wrap justify-center gap-x-3 gap-y-1 text-[10px] text-blue-600 mt-1">
-                    {formData.links.filter(l => l.url).map((link, i) => (
-                      <span key={i}>{link.url}</span>
-                    ))}
-                  </div>
+          {/* History / Saved Resumes Drawer Trigger */}
+          <button
+            type="button"
+            onClick={() => setShowHistoryModal(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+            title="View saved resumes and version history"
+          >
+            <History className="w-3.5 h-3.5 text-slate-500" />
+            <span className="hidden sm:inline">Saved Resumes</span>
+            {savedResumes.length > 0 && (
+              <span className="px-1.5 py-0.2 bg-slate-100 text-slate-700 text-[10px] font-bold rounded-full">
+                {savedResumes.length}
+              </span>
+            )}
+          </button>
+
+          {/* Save Resume Draft Button */}
+          <button
+            type="button"
+            onClick={handleSaveResume}
+            disabled={isSaving}
+            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer shadow-sm ${
+              saveSuccess
+                ? 'bg-emerald-600 text-white'
+                : 'bg-[#0F172A] hover:bg-[#1E293B] text-white'
+            }`}
+          >
+            {isSaving ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : saveSuccess ? (
+              <CheckCheck className="w-3.5 h-3.5 text-emerald-200" />
+            ) : (
+              <Save className="w-3.5 h-3.5" />
+            )}
+            <span>{isSaving ? 'Saving...' : saveSuccess ? 'Saved!' : 'Save'}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* ===== MAIN BODY (Sidebar + Editor + Preview) ===== */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* ===== LEFT ICON SIDEBAR ===== */}
+        <div className="w-14 bg-white border-r border-slate-200 flex flex-col items-center py-4 gap-2 shrink-0 select-none">
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeSection === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveSection(tab.id)}
+                title={tab.id}
+                className={`relative w-10 h-10 flex items-center justify-center rounded-xl transition-all cursor-pointer ${
+                  isActive
+                    ? 'bg-[#10B981] text-white shadow-sm'
+                    : 'text-slate-400 hover:text-slate-700 hover:bg-slate-50'
+                }`}
+              >
+                <Icon className="w-5 h-5 stroke-[1.75]" />
+                {tab.badge && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                    {tab.badge}
+                  </span>
                 )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* ===== CONTENT AREA (Editor on Left, Live Preview on Right) ===== */}
+        <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
+          
+          {/* ===== LEFT: FORM EDITOR ===== */}
+          <div className="flex-1 min-w-0 overflow-y-auto p-6 sm:p-8 bg-white border-r border-slate-200">
+            <div className="max-w-3xl mx-auto space-y-6">
+              {/* Section Heading matching screenshot */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-xl font-bold text-slate-900">{activeSection}</h2>
+                  <Edit3 className="w-4 h-4 text-slate-400" />
+                </div>
+                <span className="text-xs text-slate-400">
+                  Auto-syncs with live A4 preview
+                </span>
               </div>
 
-              {/* Summary */}
-              {formData.summary && (
-                <div className="mb-4">
-                  <h2 className="text-[11px] font-bold uppercase tracking-wider text-slate-900 border-b border-slate-300 pb-0.5 mb-1.5">
-                    Summary
-                  </h2>
-                  <p className="text-[11px] text-slate-700 leading-relaxed">
-                    {formData.summary}
-                  </p>
-                </div>
-              )}
+              {/* Dynamic Editor Content */}
+              {renderEditor()}
 
-              {/* Education */}
-              {formData.education.some(e => e.degree || e.university) && (
-                <div className="mb-4">
-                  <h2 className="text-[11px] font-bold uppercase tracking-wider text-slate-900 border-b border-slate-300 pb-0.5 mb-1.5">
-                    Education
-                  </h2>
-                  {formData.education.filter(e => e.degree || e.university).map((edu) => (
-                    <div key={edu.id} className="mb-2">
-                      <div className="flex items-baseline justify-between">
-                        <h3 className="text-xs font-bold text-slate-900">{edu.university || 'University'}</h3>
-                        <span className="text-[10px] text-slate-500 font-medium">{edu.year}</span>
-                      </div>
-                      <div className="text-[11px] text-slate-700">
-                        {edu.degree}{edu.gpa ? ` | GPA: ${edu.gpa}` : ''}
-                      </div>
-                      {edu.details && (
-                        <p className="text-[10px] text-slate-600 mt-0.5 leading-snug">{edu.details}</p>
-                      )}
+              {/* Export Buttons at Bottom */}
+              <div className="pt-6 pb-12 flex flex-col sm:flex-row gap-3">
+                <button
+                  type="button"
+                  onClick={() => handleExport('PDF')}
+                  className="flex-1 flex items-center justify-center gap-2 bg-[#0F172A] hover:bg-[#1E293B] text-white px-5 py-3 rounded-xl font-semibold text-sm transition-all shadow-sm cursor-pointer"
+                >
+                  <Download className="w-4 h-4" />
+                  Download Single-Page PDF
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleExport('ATS')}
+                  className="flex-1 flex items-center justify-center gap-2 border border-slate-300 hover:bg-slate-50 text-slate-700 px-5 py-3 rounded-xl font-semibold text-sm transition-all cursor-pointer"
+                >
+                  <FileText className="w-4 h-4" />
+                  Download ATS Version
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* ===== RIGHT: A4 LIVE RESUME PREVIEW ===== */}
+          <div className="hidden lg:flex flex-col w-[480px] xl:w-[540px] bg-slate-100 shrink-0">
+            {/* Preview Control Toolbar */}
+            <div className="flex items-center justify-between px-4 py-2 bg-white border-b border-slate-200">
+              <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
+                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                <span>A4 Live Preview {isOnePageMode ? '(1-Page Fit)' : ''}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setZoomLevel(prev => Math.max(40, prev - 10))}
+                  className="w-7 h-7 flex items-center justify-center rounded border border-slate-300 text-slate-600 hover:bg-slate-50 text-xs font-bold"
+                >
+                  −
+                </button>
+                <span className="text-xs text-slate-600 font-medium w-10 text-center">{zoomLevel}%</span>
+                <button
+                  type="button"
+                  onClick={() => setZoomLevel(prev => Math.min(100, prev + 10))}
+                  className="w-7 h-7 flex items-center justify-center rounded border border-slate-300 text-slate-600 hover:bg-slate-50 text-xs font-bold"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+
+            {/* Scrollable Preview Canvas with 1-Page A4 Proportion Box */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 flex justify-center bg-slate-200/60">
+              <div
+                id="resume-preview"
+                className="bg-white shadow-2xl border border-slate-300 text-slate-900 rounded-sm relative flex flex-col justify-between transition-all duration-300"
+                style={{
+                  width: '100%',
+                  maxWidth: '560px',
+                  minHeight: isOnePageMode ? '792px' : '850px',
+                  maxHeight: isOnePageMode ? '792px' : 'none',
+                  padding: isOnePageMode ? '28px 36px' : '36px 44px',
+                  overflow: isOnePageMode ? 'hidden' : 'visible',
+                  fontFamily: "'Inter', sans-serif",
+                  lineHeight: isOnePageMode ? 1.3 : 1.4
+                }}
+              >
+                <div>
+                  {/* Header */}
+                  <div className={`text-center border-b border-slate-800 ${isOnePageMode ? 'pb-2.5 mb-2.5' : 'pb-3.5 mb-3.5'}`}>
+                    <h1 className={`${isOnePageMode ? 'text-xl' : 'text-2xl'} font-bold tracking-tight text-slate-950 uppercase mb-0.5`}>
+                      {formData.name || 'PARTH KULKARNI'}
+                    </h1>
+                    <div className="flex flex-wrap justify-center gap-x-2.5 gap-y-0.5 text-[10px] text-slate-600">
+                      {formData.location && <span>{formData.location}</span>}
+                      {formData.phone && <span>{formData.phone}</span>}
+                      {formData.email && <span>{formData.email}</span>}
                     </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Experience */}
-              {formData.experiences.some(e => e.title || e.company) && (
-                <div className="mb-4">
-                  <h2 className="text-[11px] font-bold uppercase tracking-wider text-slate-900 border-b border-slate-300 pb-0.5 mb-1.5">
-                    Experience
-                  </h2>
-                  {formData.experiences.filter(e => e.title || e.company).map((exp) => (
-                    <div key={exp.id} className="mb-3">
-                      <div className="flex items-baseline justify-between">
-                        <h3 className="text-xs font-bold text-slate-900">{exp.title || 'Role'}</h3>
-                        <span className="text-[10px] text-slate-500 font-medium">{exp.duration}</span>
+                    {formData.links.some(l => l.url) && (
+                      <div className="flex flex-wrap justify-center gap-x-2.5 gap-y-0.5 text-[9.5px] text-blue-600 mt-0.5">
+                        {formData.links.filter(l => l.url).map((link, i) => (
+                          <span key={i}>{link.url}</span>
+                        ))}
                       </div>
-                      <div className="text-[11px] font-semibold text-slate-700">{exp.company}</div>
-                      {exp.techStack && (
-                        <div className="text-[10px] text-slate-500 italic mb-1">{exp.techStack}</div>
-                      )}
-                      <ul className="list-disc list-outside ml-4 space-y-0.5">
-                        {exp.bullets.filter(b => b.trim()).map((bullet, idx) => (
-                          <li key={idx} className="text-[10.5px] text-slate-700 leading-snug pl-0.5">
-                            {bullet}
+                    )}
+                  </div>
+
+                  {/* Summary */}
+                  {formData.summary && (
+                    <div className={isOnePageMode ? 'mb-2.5' : 'mb-3.5'}>
+                      <h2 className="text-[10px] font-bold uppercase tracking-wider text-slate-900 border-b border-slate-300 pb-0.5 mb-1">
+                        Summary
+                      </h2>
+                      <p className="text-[10px] text-slate-700 leading-relaxed">
+                        {formData.summary}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Education */}
+                  {formData.education.some(e => e.degree || e.university) && (
+                    <div className={isOnePageMode ? 'mb-2.5' : 'mb-3.5'}>
+                      <h2 className="text-[10px] font-bold uppercase tracking-wider text-slate-900 border-b border-slate-300 pb-0.5 mb-1">
+                        Education
+                      </h2>
+                      {formData.education.filter(e => e.degree || e.university).map((edu) => (
+                        <div key={edu.id} className="mb-1.5">
+                          <div className="flex items-baseline justify-between">
+                            <h3 className="text-[10.5px] font-bold text-slate-900">{edu.university || 'University'}</h3>
+                            <span className="text-[9px] text-slate-500 font-medium">{edu.year}</span>
+                          </div>
+                          <div className="text-[10px] text-slate-700">
+                            {edu.degree}{edu.gpa ? ` | GPA: ${edu.gpa}` : ''}
+                          </div>
+                          {edu.details && (
+                            <p className="text-[9.5px] text-slate-600 mt-0.5 leading-snug">{edu.details}</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Experience */}
+                  {formData.experiences.some(e => e.title || e.company) && (
+                    <div className={isOnePageMode ? 'mb-2.5' : 'mb-3.5'}>
+                      <h2 className="text-[10px] font-bold uppercase tracking-wider text-slate-900 border-b border-slate-300 pb-0.5 mb-1">
+                        Experience
+                      </h2>
+                      {formData.experiences.filter(e => e.title || e.company).map((exp) => (
+                        <div key={exp.id} className="mb-2">
+                          <div className="flex items-baseline justify-between">
+                            <h3 className="text-[10.5px] font-bold text-slate-900">{exp.title || 'Role'}</h3>
+                            <span className="text-[9px] text-slate-500 font-medium">{exp.duration}</span>
+                          </div>
+                          <div className="text-[10px] font-semibold text-slate-700">{exp.company}</div>
+                          {exp.techStack && (
+                            <div className="text-[9px] text-slate-500 italic">{exp.techStack}</div>
+                          )}
+                          <ul className="list-disc list-outside ml-3.5 space-y-0.5 mt-0.5">
+                            {exp.bullets.filter(b => b.trim()).map((bullet, idx) => (
+                              <li key={idx} className="text-[9.5px] text-slate-700 leading-snug pl-0.5">
+                                {bullet}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Projects */}
+                  {formData.projects.some(p => p.name) && (
+                    <div className={isOnePageMode ? 'mb-2.5' : 'mb-3.5'}>
+                      <h2 className="text-[10px] font-bold uppercase tracking-wider text-slate-900 border-b border-slate-300 pb-0.5 mb-1">
+                        Projects
+                      </h2>
+                      {formData.projects.filter(p => p.name).map((proj) => (
+                        <div key={proj.id} className="mb-2">
+                          <div className="flex items-baseline justify-between">
+                            <h3 className="text-[10.5px] font-bold text-slate-900">{proj.name}</h3>
+                            {proj.link && <span className="text-[9px] text-blue-600">{proj.link}</span>}
+                          </div>
+                          {proj.tech && <div className="text-[9px] text-slate-500 italic">{proj.tech}</div>}
+                          {proj.description && (
+                            <p className="text-[9.5px] text-slate-700 leading-snug">{proj.description}</p>
+                          )}
+                          {proj.bullets && proj.bullets.some(b => b.trim()) && (
+                            <ul className="list-disc list-outside ml-3.5 space-y-0.5 mt-0.5">
+                              {proj.bullets.filter(b => b.trim()).map((bullet, idx) => (
+                                <li key={idx} className="text-[9.5px] text-slate-700 leading-snug pl-0.5">
+                                  {bullet}
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Skills */}
+                  {formData.skillCategories.some(c => c.skills) && (
+                    <div className={isOnePageMode ? 'mb-2' : 'mb-3'}>
+                      <h2 className="text-[10px] font-bold uppercase tracking-wider text-slate-900 border-b border-slate-300 pb-0.5 mb-1">
+                        Skills
+                      </h2>
+                      {formData.skillCategories.filter(c => c.skills).map((cat) => (
+                        <p key={cat.id} className="text-[9.5px] text-slate-700 mb-0.5 leading-snug">
+                          <span className="font-semibold text-slate-900">{cat.category}: </span>
+                          {cat.skills}
+                        </p>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Certifications */}
+                  {formData.certifications.some(c => c.name) && (
+                    <div className={isOnePageMode ? 'mb-2' : 'mb-3'}>
+                      <h2 className="text-[10px] font-bold uppercase tracking-wider text-slate-900 border-b border-slate-300 pb-0.5 mb-1">
+                        Certifications
+                      </h2>
+                      <div className="space-y-0.5">
+                        {formData.certifications.filter(c => c.name).map((c) => (
+                          <p key={c.id} className="text-[9.5px] text-slate-700 leading-snug">
+                            <span className="font-medium text-slate-900">{c.name}</span>
+                            {c.issuer ? ` – ${c.issuer}` : ''}
+                            {c.date ? ` (${c.date})` : ''}
+                          </p>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Honors & Awards */}
+                  {formData.achievements.some(a => a.title || a.description) && (
+                    <div className={isOnePageMode ? 'mb-2' : 'mb-3'}>
+                      <h2 className="text-[10px] font-bold uppercase tracking-wider text-slate-900 border-b border-slate-300 pb-0.5 mb-1">
+                        Honors & Awards
+                      </h2>
+                      <ul className="list-disc list-outside ml-3.5 space-y-0.5">
+                        {formData.achievements.map((ach) => (
+                          <li key={ach.id} className="text-[9.5px] text-slate-700 leading-snug pl-0.5">
+                            <span className="font-medium text-slate-900">{ach.title || ''}</span>
+                            {ach.issuer ? ` (${ach.issuer})` : ''}
+                            {ach.description ? ` – ${ach.description}` : ''}
                           </li>
                         ))}
                       </ul>
                     </div>
-                  ))}
+                  )}
                 </div>
-              )}
 
-              {/* Projects */}
-              {formData.projects.some(p => p.name) && (
-                <div className="mb-4">
-                  <h2 className="text-[11px] font-bold uppercase tracking-wider text-slate-900 border-b border-slate-300 pb-0.5 mb-1.5">
-                    Projects
-                  </h2>
-                  {formData.projects.filter(p => p.name).map((proj) => (
-                    <div key={proj.id} className="mb-2.5">
-                      <div className="flex items-baseline justify-between">
-                        <h3 className="text-xs font-bold text-slate-900">{proj.name}</h3>
-                        {proj.link && <span className="text-[10px] text-blue-600">{proj.link}</span>}
-                      </div>
-                      {proj.tech && <div className="text-[10px] text-slate-500 italic mb-0.5">{proj.tech}</div>}
-                      {proj.description && (
-                        <p className="text-[10.5px] text-slate-700 mb-0.5 leading-snug">{proj.description}</p>
-                      )}
-                      {proj.bullets && proj.bullets.some(b => b.trim()) && (
-                        <ul className="list-disc list-outside ml-4 space-y-0.5">
-                          {proj.bullets.filter(b => b.trim()).map((bullet, idx) => (
-                            <li key={idx} className="text-[10.5px] text-slate-700 leading-snug pl-0.5">
-                              {bullet}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Skills */}
-              {formData.skillCategories.some(c => c.skills) && (
-                <div className="mb-4">
-                  <h2 className="text-[11px] font-bold uppercase tracking-wider text-slate-900 border-b border-slate-300 pb-0.5 mb-1.5">
-                    Skills
-                  </h2>
-                  {formData.skillCategories.filter(c => c.skills).map((cat) => (
-                    <p key={cat.id} className="text-[10.5px] text-slate-700 mb-1 leading-snug">
-                      <span className="font-semibold text-slate-900">{cat.category}: </span>
-                      {cat.skills}
-                    </p>
-                  ))}
-                </div>
-              )}
-
-              {/* Certifications */}
-              {formData.certifications.some(c => c.name) && (
-                <div className="mb-4">
-                  <h2 className="text-[11px] font-bold uppercase tracking-wider text-slate-900 border-b border-slate-300 pb-0.5 mb-1.5">
-                    Certifications
-                  </h2>
-                  <div className="space-y-1">
-                    {formData.certifications.filter(c => c.name).map((c) => (
-                      <p key={c.id} className="text-[10.5px] text-slate-700 leading-snug">
-                        <span className="font-medium text-slate-900">{c.name}</span>
-                        {c.issuer ? ` – ${c.issuer}` : ''}
-                        {c.date ? ` (${c.date})` : ''}
-                      </p>
-                    ))}
+                {/* 1-Page A4 Cutoff indicator marker */}
+                {isOnePageMode && (
+                  <div className="pt-2 border-t border-dashed border-emerald-300 flex items-center justify-between text-[9px] text-emerald-600 font-medium select-none">
+                    <span>✓ Fitted to 1-Page A4 Format</span>
+                    <span>Single Page Standard</span>
                   </div>
-                </div>
-              )}
-
-              {/* Honors & Awards */}
-              {formData.achievements.some(a => a.title || a.description) && (
-                <div className="mb-4">
-                  <h2 className="text-[11px] font-bold uppercase tracking-wider text-slate-900 border-b border-slate-300 pb-0.5 mb-1.5">
-                    Honors & Awards
-                  </h2>
-                  <ul className="list-disc list-outside ml-4 space-y-0.5">
-                    {formData.achievements.map((ach) => (
-                      <li key={ach.id} className="text-[10.5px] text-slate-700 leading-snug pl-0.5">
-                        <span className="font-medium text-slate-900">{ach.title || ''}</span>
-                        {ach.issuer ? ` (${ach.issuer})` : ''}
-                        {ach.description ? ` – ${ach.description}` : ''}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* ===== SAVED RESUMES & VERSION HISTORY MODAL ===== */}
+      {showHistoryModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 space-y-5 max-h-[85vh] flex flex-col">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                  <History className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">Saved Resumes & Drafts</h3>
+                  <p className="text-xs text-slate-500">Restore or switch between your saved resume versions</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowHistoryModal(false)}
+                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-50"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* List of Saved Resumes */}
+            <div className="flex-1 overflow-y-auto space-y-3 pr-1">
+              {savedResumes.length === 0 ? (
+                <div className="text-center py-10 space-y-3 text-slate-400">
+                  <FileText className="w-10 h-10 mx-auto stroke-[1.25] text-slate-300" />
+                  <p className="text-sm">No saved resumes found yet.</p>
+                  <p className="text-xs text-slate-500">Click the "Save" button in the top bar while editing to store your drafts here.</p>
+                </div>
+              ) : (
+                savedResumes.map((item) => (
+                  <div
+                    key={item.id}
+                    className={`p-4 rounded-xl border transition-all flex items-center justify-between gap-3 ${
+                      currentResumeId === item.id
+                        ? 'border-emerald-500 bg-emerald-50/40 ring-1 ring-emerald-500/20'
+                        : 'border-slate-200 hover:border-slate-300 bg-white'
+                    }`}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-sm text-slate-900 truncate">
+                          {item.title || 'Untitled Resume'}
+                        </span>
+                        {currentResumeId === item.id && (
+                          <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-full">
+                            Active
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        {item.formData?.name ? `Name: ${item.formData.name}` : 'Blank Draft'} • Updated {new Date(item.updatedAt || Date.now()).toLocaleDateString()} at {new Date(item.updatedAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handleLoadResume(item)}
+                        className="px-3 py-1.5 bg-[#0F172A] hover:bg-[#1E293B] text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+                      >
+                        Load
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (confirm(`Delete "${item.title}" from your saved drafts?`)) {
+                            deleteResumeFromStore(item.id);
+                          }
+                        }}
+                        className="p-1.5 text-slate-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors cursor-pointer"
+                        title="Delete saved draft"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Modal Bottom Actions */}
+            <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={handleNewResume}
+                className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 px-3 py-2 rounded-xl transition-colors cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>New Blank Resume</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowHistoryModal(false)}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition-colors cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

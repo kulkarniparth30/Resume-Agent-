@@ -37,6 +37,15 @@ const getInitialProjectGuides = () => {
   }
 };
 
+const getInitialSavedResumes = () => {
+  try {
+    const saved = localStorage.getItem('saved_resumes');
+    return saved ? JSON.parse(saved) : [];
+  } catch {
+    return [];
+  }
+};
+
 const useAgentStore = create((set, get) => ({
   // Inputs
   resumeText: '',
@@ -50,6 +59,7 @@ const useAgentStore = create((set, get) => ({
   analysisResult: null,
   analysisHistory: getInitialHistory(),
   projectGuidesCache: getInitialProjectGuides(),
+  savedResumes: getInitialSavedResumes(),
   
   // Roadmap
   roadmapData: null,
@@ -181,6 +191,38 @@ const useAgentStore = create((set, get) => ({
       console.error('Error syncing cloud history:', err);
     }
   },
+
+  // Actions — Saved Resumes in History
+  saveResume: (resumeEntry) => set((state) => {
+    const existingIdx = state.savedResumes.findIndex(r => r.id === resumeEntry.id);
+    let updated;
+    if (existingIdx >= 0) {
+      updated = [...state.savedResumes];
+      updated[existingIdx] = { ...resumeEntry, updatedAt: new Date().toISOString() };
+    } else {
+      updated = [
+        {
+          ...resumeEntry,
+          id: resumeEntry.id || Date.now().toString(),
+          title: resumeEntry.title || `${resumeEntry.formData?.name || 'Resume'} - ${new Date().toLocaleDateString()}`,
+          updatedAt: new Date().toISOString()
+        },
+        ...state.savedResumes
+      ];
+    }
+    try {
+      localStorage.setItem('saved_resumes', JSON.stringify(updated));
+    } catch {}
+    return { savedResumes: updated };
+  }),
+
+  deleteResume: (id) => set((state) => {
+    const updated = state.savedResumes.filter(r => r.id !== id);
+    try {
+      localStorage.setItem('saved_resumes', JSON.stringify(updated));
+    } catch {}
+    return { savedResumes: updated };
+  }),
 
   setLoading: (loading) => set({ isLoading: loading }),
   setCurrentStep: (step) => set({ currentStep: step }),

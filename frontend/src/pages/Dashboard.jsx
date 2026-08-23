@@ -29,6 +29,9 @@ import {
   History,
   FileEdit,
   Zap,
+  FileText,
+  Trash2,
+  Plus
 } from 'lucide-react';
 
 const RankBreakdownBar = ({ label, value, color }) => (
@@ -48,6 +51,8 @@ export default function Dashboard() {
   const analysisResult = useAgentStore((state) => state.analysisResult);
   const jobRole = useAgentStore((state) => state.jobRole);
   const analysisHistory = useAgentStore((state) => state.analysisHistory);
+  const savedResumes = useAgentStore((state) => state.savedResumes);
+  const deleteResume = useAgentStore((state) => state.deleteResume);
   const loadAnalysisFromHistory = useAgentStore((state) => state.loadAnalysisFromHistory);
   const syncCloudHistory = useAgentStore((state) => state.syncCloudHistory);
   const [selectedLearnSkill, setSelectedLearnSkill] = useState(null);
@@ -58,22 +63,125 @@ export default function Dashboard() {
     syncCloudHistory();
   }, []);
 
+  // Empty state with history if available
   if (!analysisResult) {
+    const hasHistory = analysisHistory.length > 0 || savedResumes.length > 0;
+
     return (
-      <div className="min-h-screen bg-surface flex items-center justify-center px-4">
-        <div className="text-center max-w-md animate-fade-in">
-          <div className="w-20 h-20 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
-            <Activity className="w-10 h-10 text-primary" />
+      <div className="min-h-screen bg-surface py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-4xl mx-auto space-y-8">
+          <div className="text-center max-w-lg mx-auto animate-fade-in">
+            <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <Activity className="w-8 h-8 text-primary" />
+            </div>
+            <h2 className="text-2xl font-bold text-dark mb-2">Analysis Dashboard</h2>
+            <p className="text-text-secondary mb-6 text-sm">
+              Upload your resume to run a deep AI match analysis, or manage your saved resumes below.
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              <Link
+                to="/upload"
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-white font-semibold text-sm rounded-xl hover:bg-primary-light transition-colors shadow-sm"
+              >
+                <Sparkles className="w-4 h-4" />
+                Start New Analysis
+              </Link>
+              <Link
+                to="/resume-builder"
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-white border border-border text-dark font-semibold text-sm rounded-xl hover:bg-surface-alt transition-colors"
+              >
+                <FileText className="w-4 h-4 text-emerald-600" />
+                Open Resume Builder
+              </Link>
+            </div>
           </div>
-          <h2 className="text-2xl font-bold text-dark mb-3">No Analysis Yet</h2>
-          <p className="text-text-secondary mb-6">Upload your resume and run an analysis to see your personalized dashboard.</p>
-          <Link
-            to="/upload"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white font-semibold rounded-xl hover:bg-primary-light transition-colors"
-          >
-            <Sparkles className="w-4 h-4" />
-            Start Analysis
-          </Link>
+
+          {/* If user has history, display the saved items */}
+          {hasHistory && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6">
+              {/* Saved Resumes History Card */}
+              <div className="bg-white p-6 rounded-2xl border border-border shadow-sm space-y-4">
+                <div className="flex items-center justify-between pb-2 border-b border-border">
+                  <div className="flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-emerald-600" />
+                    <h3 className="font-bold text-dark text-base">Saved Resumes ({savedResumes.length})</h3>
+                  </div>
+                  <Link to="/resume-builder" className="text-xs font-semibold text-emerald-600 hover:underline">
+                    + New
+                  </Link>
+                </div>
+
+                {savedResumes.length === 0 ? (
+                  <p className="text-xs text-text-muted italic py-4 text-center">No saved resume drafts yet.</p>
+                ) : (
+                  <div className="space-y-2.5 max-h-64 overflow-y-auto pr-1">
+                    {savedResumes.map((item) => (
+                      <div key={item.id} className="p-3 bg-surface-alt rounded-xl border border-border/70 flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="font-semibold text-xs text-dark truncate">{item.title || 'Resume'}</p>
+                          <p className="text-[10px] text-text-muted">
+                            {item.formData?.name || 'Draft'} • {new Date(item.updatedAt || Date.now()).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <Link
+                            to="/resume-builder"
+                            className="px-2.5 py-1 bg-dark text-white rounded-lg text-[11px] font-semibold hover:bg-black transition-colors"
+                          >
+                            Edit
+                          </Link>
+                          <button
+                            onClick={() => deleteResume(item.id)}
+                            className="p-1 text-text-muted hover:text-danger rounded"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Past Analyses History Card */}
+              <div className="bg-white p-6 rounded-2xl border border-border shadow-sm space-y-4">
+                <div className="flex items-center justify-between pb-2 border-b border-border">
+                  <div className="flex items-center gap-2">
+                    <History className="w-5 h-5 text-primary" />
+                    <h3 className="font-bold text-dark text-base">Past Analyses ({analysisHistory.length})</h3>
+                  </div>
+                  <Link to="/upload" className="text-xs font-semibold text-primary hover:underline">
+                    + Analyze
+                  </Link>
+                </div>
+
+                {analysisHistory.length === 0 ? (
+                  <p className="text-xs text-text-muted italic py-4 text-center">No past analyses saved yet.</p>
+                ) : (
+                  <div className="space-y-2.5 max-h-64 overflow-y-auto pr-1">
+                    {analysisHistory.map((entry, idx) => (
+                      <div
+                        key={entry.id || idx}
+                        onClick={() => loadAnalysisFromHistory(idx)}
+                        className="p-3 bg-surface-alt hover:bg-surface rounded-xl border border-border/70 flex items-center justify-between gap-3 cursor-pointer transition-colors"
+                      >
+                        <div className="min-w-0">
+                          <p className="font-semibold text-xs text-dark truncate">{entry.jobRole || 'Target Role'}</p>
+                          <p className="text-[10px] text-text-muted">
+                            Rank: {entry.result?.rank_score || 0}/100 • Match: {entry.result?.match_percent || 0}% • {new Date(entry.date).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <span className="text-xs font-bold text-primary shrink-0">
+                          View →
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -118,7 +226,7 @@ export default function Dashboard() {
             </h1>
             <p className="text-text-secondary mt-1">Comprehensive review of your resume against industry standards</p>
           </div>
-          <div className="mt-4 sm:mt-0 flex gap-3 items-center">
+          <div className="mt-4 sm:mt-0 flex flex-wrap gap-3 items-center">
             
             {/* History Dropdown */}
             {analysisHistory.length > 0 && (
@@ -128,11 +236,11 @@ export default function Dashboard() {
                   className="inline-flex items-center gap-2 px-4 py-2.5 border border-border text-dark text-sm font-semibold rounded-xl hover:bg-surface-alt transition-colors cursor-pointer"
                 >
                   <History className="w-4 h-4 text-text-muted" />
-                  History
+                  History ({analysisHistory.length})
                 </button>
                 
                 {showHistory && (
-                  <div className="absolute right-0 top-full mt-2 w-64 bg-white border border-border rounded-xl shadow-lg overflow-hidden z-20">
+                  <div className="absolute right-0 top-full mt-2 w-72 bg-white border border-border rounded-xl shadow-lg overflow-hidden z-20">
                     <div className="px-4 py-3 bg-surface-alt border-b border-border">
                       <h4 className="text-xs font-bold text-dark uppercase tracking-wider">Past Analyses</h4>
                     </div>
@@ -164,6 +272,14 @@ export default function Dashboard() {
             )}
 
             <Link
+              to="/resume-builder"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm"
+            >
+              <FileText className="w-4 h-4" />
+              Resume Builder
+            </Link>
+
+            <Link
               to="/roadmap"
               className="inline-flex items-center gap-2 px-5 py-2.5 border-2 border-primary text-primary text-sm font-semibold rounded-xl hover:bg-primary/5 transition-colors"
             >
@@ -182,7 +298,7 @@ export default function Dashboard() {
 
         {/* Top Summary Bar — 4 Stat Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {/* Rank Score — NEW */}
+          {/* Rank Score */}
           <div className="bg-white rounded-xl shadow-md p-6 flex flex-col items-center justify-center animate-slide-up stagger-1 border-t-4" style={{ borderTopColor: rankColor }}>
             <ATSScoreRing score={data.rank_score || 0} size={140} label="Rank Score" />
             <span className="mt-2 text-xs font-bold px-3 py-1 rounded-full" style={{ backgroundColor: `${rankColor}15`, color: rankColor }}>
@@ -206,7 +322,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Rank Breakdown — NEW */}
+        {/* Rank Breakdown */}
         {data.rank_breakdown && (
           <div className="bg-white rounded-xl shadow-md p-6 mb-8 animate-slide-up stagger-2 border border-border">
             <div className="flex items-center gap-2 mb-5">
@@ -253,93 +369,64 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* Matching Skills */}
-            <div className="bg-white rounded-xl shadow-md p-6 animate-slide-up stagger-5">
-              <h3 className="text-lg font-bold text-dark flex items-center gap-2 mb-4">
-                <CheckCircle2 className="w-5 h-5 text-success" />
-                Your Matching Skills
-              </h3>
-              <p className="text-sm text-text-secondary mb-4">
-                Skills you have that match the job requirements
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {matchingSkills.map((skill) => (
-                  <SkillCard key={skill} name={skill} variant="owned" />
-                ))}
-                {matchingSkills.length === 0 && (
-                  <p className="text-text-muted text-sm italic">No matching skills found</p>
-                )}
-              </div>
-              {missingSkills.length > 0 && (
-                <div className="mt-4 pt-4 border-t border-border">
-                  <p className="text-sm font-medium text-text-secondary mb-3">Missing Skills:</p>
+            {/* Skills Overview */}
+            <div className="bg-white rounded-xl shadow-md p-6 animate-slide-up stagger-4 border border-border">
+              <h3 className="text-lg font-bold text-dark mb-4">Skills Overview</h3>
+              <div className="space-y-4">
+                <div>
+                  <h4 className="text-sm font-semibold text-success mb-2 flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4" />
+                    Matching Skills ({matchingSkills.length})
+                  </h4>
                   <div className="flex flex-wrap gap-2">
-                    {missingSkills.map((skill) => (
-                      <SkillCard key={skill} name={skill} variant="missing" />
+                    {matchingSkills.map((skill, idx) => (
+                      <SkillCard key={idx} skill={skill} type="matching" />
                     ))}
+                    {matchingSkills.length === 0 && (
+                      <p className="text-sm text-text-muted italic">No direct matching skills found</p>
+                    )}
                   </div>
                 </div>
-              )}
+
+                <div>
+                  <h4 className="text-sm font-semibold text-danger mb-2 flex items-center gap-1.5">
+                    <AlertCircle className="w-4 h-4" />
+                    Missing Skills ({missingSkills.length})
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    {missingSkills.map((skill, idx) => (
+                      <SkillCard
+                        key={idx}
+                        skill={skill}
+                        type="missing"
+                        onLearnClick={(s) => setSelectedLearnSkill(s)}
+                      />
+                    ))}
+                    {missingSkills.length === 0 && (
+                      <p className="text-sm text-text-muted italic">All required skills match!</p>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
 
-            {/* Targeted Resume Improvements (AI Tailoring Suggestions) */}
-            {data.resume_improvements && data.resume_improvements.length > 0 && (
-              <div className="bg-white rounded-2xl shadow-md border border-primary/20 p-6 animate-slide-up stagger-5">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 pb-4 border-b border-border">
-                  <div>
-                    <h3 className="text-lg font-bold text-dark flex items-center gap-2">
-                      <Zap className="w-5 h-5 text-primary" />
-                      Recommended Resume Changes for This JD
-                    </h3>
-                    <p className="text-xs text-text-secondary mt-1">
-                      Direct before-and-after improvements to match the target job description
-                    </p>
-                  </div>
-                  <Link
-                    to="/resume-builder"
-                    className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-primary hover:bg-primary-light text-white text-xs font-bold rounded-xl transition-colors shrink-0 shadow-sm shadow-primary/20"
-                  >
-                    <FileEdit className="w-4 h-4" />
-                    Apply in Resume Builder
-                  </Link>
-                </div>
-
+            {/* Project Recommendations */}
+            {data.projects && data.projects.length > 0 && (
+              <div className="animate-slide-up stagger-4">
+                <h3 className="text-lg font-bold text-dark flex items-center gap-2 mb-4">
+                  <Trophy className="w-5 h-5 text-accent" />
+                  Recommended Portfolio Projects
+                </h3>
                 <div className="space-y-4">
-                  {data.resume_improvements.map((item, idx) => (
-                    <div key={idx} className="p-4 rounded-xl bg-surface-alt border border-border space-y-2.5">
-                      <div className="flex items-center justify-between">
-                        <span className="px-2 py-0.5 rounded-md text-[11px] font-bold uppercase tracking-wider bg-primary/10 text-primary">
-                          {item.section}
-                        </span>
-                        <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
-                          item.impact === 'High' ? 'bg-danger/10 text-danger' : 'bg-warning/10 text-warning'
-                        }`}>
-                          {item.impact || 'High'} Impact
-                        </span>
-                      </div>
-
-                      {item.current && (
-                        <div>
-                          <span className="text-[11px] font-semibold text-text-muted uppercase">Current:</span>
-                          <p className="text-xs text-text-secondary bg-white p-2 rounded-lg border border-border line-through opacity-80 mt-0.5">
-                            {item.current}
-                          </p>
-                        </div>
-                      )}
-
-                      <div>
-                        <span className="text-[11px] font-semibold text-success uppercase">Suggested Improvement:</span>
-                        <p className="text-xs text-dark font-medium bg-success/5 border border-success/20 p-2.5 rounded-lg mt-0.5 leading-relaxed">
-                          {item.suggested}
-                        </p>
-                      </div>
-
-                      {item.reason && (
-                        <p className="text-[11px] text-text-muted italic flex items-center gap-1 mt-1">
-                          <span className="font-semibold text-primary">Why:</span> {item.reason}
-                        </p>
-                      )}
-                    </div>
+                  {data.projects.map((project, idx) => (
+                    <ProjectCard
+                      key={idx}
+                      title={project.title}
+                      description={project.description}
+                      skills={project.skills}
+                      difficulty={project.difficulty}
+                      onBuildClick={(proj) => setSelectedProject(proj)}
+                    />
                   ))}
                 </div>
               </div>
@@ -349,52 +436,81 @@ export default function Dashboard() {
           {/* RIGHT COLUMN (2/5) */}
           <div className="lg:col-span-2 space-y-6">
 
-            {/* Skill Suggestions */}
-            {data.suggestions && data.suggestions.length > 0 && (
-              <div className="animate-slide-up stagger-3">
-                <h3 className="text-lg font-bold text-dark flex items-center gap-2 mb-4">
-                  <Lightbulb className="w-5 h-5 text-warning" />
-                  Recommended Skills
-                </h3>
-                <div className="space-y-3">
-                  {data.suggestions.map((sug, idx) => (
-                    <div
-                      key={idx}
-                      className="bg-white rounded-xl shadow-sm border border-border p-4 flex items-center justify-between card-hover group"
-                    >
-                      <div>
-                        <h4 className="font-semibold text-dark group-hover:text-primary transition-colors">{sug.skill}</h4>
-                        <p className="text-xs text-text-secondary mt-0.5">Related to: <span className="font-medium text-primary">{sug.related_to}</span></p>
-                      </div>
-                      <div className="flex items-center gap-1.5 text-sm font-bold text-primary bg-primary/10 px-3 py-1.5 rounded-full">
-                        <Clock className="w-3.5 h-3.5" />
-                        {sug.weeks}w
-                      </div>
+            {/* Quick Resume Builder CTA with Saved Resumes List */}
+            <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200 rounded-2xl p-5 shadow-sm space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-emerald-600" />
+                  <h4 className="font-bold text-slate-900 text-sm">Resume Builder Drafts</h4>
+                </div>
+                <Link
+                  to="/resume-builder"
+                  className="text-xs font-bold text-emerald-700 bg-emerald-100 hover:bg-emerald-200 px-2.5 py-1 rounded-lg transition-colors"
+                >
+                  Open Builder →
+                </Link>
+              </div>
+
+              {savedResumes.length > 0 ? (
+                <div className="space-y-2 pt-1">
+                  {savedResumes.slice(0, 3).map((item) => (
+                    <div key={item.id} className="bg-white p-2.5 rounded-xl border border-emerald-100 flex items-center justify-between text-xs">
+                      <span className="font-medium text-slate-800 truncate">{item.title}</span>
+                      <Link
+                        to="/resume-builder"
+                        className="text-[11px] font-semibold text-emerald-600 hover:underline shrink-0 ml-2"
+                      >
+                        Edit
+                      </Link>
                     </div>
                   ))}
                 </div>
+              ) : (
+                <p className="text-xs text-slate-600">
+                  Build and save custom resumes tailored to your target job roles with real-time A4 preview.
+                </p>
+              )}
+            </div>
+
+            {/* Resume Improvements CTA */}
+            {data.resume_improvements && data.resume_improvements.length > 0 && (
+              <div className="bg-gradient-to-br from-primary/5 via-primary/10 to-accent/5 rounded-xl p-6 border-2 border-primary/20 animate-slide-up stagger-3">
+                <div className="flex items-center gap-2 text-primary font-bold mb-2">
+                  <Zap className="w-5 h-5" />
+                  <span>Tailored Resume Improvements</span>
+                </div>
+                <p className="text-sm text-text-secondary mb-4">
+                  We identified <strong className="text-dark">{data.resume_improvements.length} high-impact improvements</strong> tailored for this job description.
+                </p>
+                <Link
+                  to="/resume-builder"
+                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-primary text-white font-semibold rounded-xl hover:bg-primary-light transition-colors text-sm shadow-md shadow-primary/20"
+                >
+                  <FileEdit className="w-4 h-4" />
+                  Apply Improvements in Resume Builder
+                </Link>
               </div>
             )}
 
-            {/* Project Ideas */}
-            {data.project_ideas && data.project_ideas.length > 0 && (
-              <div className="animate-slide-up stagger-4">
-                <h3 className="text-lg font-bold text-dark flex items-center gap-2 mb-4">
-                  <Lightbulb className="w-5 h-5 text-accent" />
-                  Project Ideas
+            {/* Experience Feedback */}
+            {data.experience_feedback && (
+              <div className="bg-white rounded-xl shadow-md p-6 animate-slide-up stagger-4 border border-border">
+                <h3 className="text-lg font-bold text-dark flex items-center gap-2 mb-3">
+                  <Briefcase className="w-5 h-5 text-primary" />
+                  Experience Evaluation
                 </h3>
-                <div className="space-y-4">
-                  {data.project_ideas.map((proj, idx) => (
-                    <ProjectCard
-                      key={idx}
-                      name={proj.name}
-                      description={proj.description}
-                      skills_covered={proj.skills_covered}
-                      estimated_time={proj.estimated_time}
-                      onStart={() => setSelectedProject(proj)}
-                    />
-                  ))}
-                </div>
+                <p className="text-sm text-text-secondary leading-relaxed">{data.experience_feedback}</p>
+              </div>
+            )}
+
+            {/* Preparation Strategy */}
+            {data.preparation_strategy && (
+              <div className="bg-white rounded-xl shadow-md p-6 animate-slide-up stagger-5 border border-border">
+                <h3 className="text-lg font-bold text-dark flex items-center gap-2 mb-3">
+                  <Lightbulb className="w-5 h-5 text-warning" />
+                  Preparation Strategy
+                </h3>
+                <p className="text-sm text-text-secondary leading-relaxed">{data.preparation_strategy}</p>
               </div>
             )}
 
