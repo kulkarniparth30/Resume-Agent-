@@ -40,9 +40,9 @@ function ProtectedRoute({ children }) {
 export default function App() {
   return (
     <Router>
-      <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
+      <div className="min-h-screen flex flex-col">
         <Navbar />
-        <main className="flex-1 w-full max-w-[100vw]">
+        <main className="flex-1 w-full max-w-[100vw] pt-32">
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/upload" element={<ProtectedRoute><Upload /></ProtectedRoute>} />

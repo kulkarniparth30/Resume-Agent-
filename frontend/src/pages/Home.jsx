@@ -1,153 +1,170 @@
-import { useNavigate, Link } from 'react-router-dom';
-import { Target, ShieldCheck, Briefcase, Brain, ArrowRight, Sparkles, Zap, FileEdit, CheckCircle2, History } from 'lucide-react';
-import useAgentStore from '../store/useAgentStore';
+import { Link } from 'react-router-dom';
+import { Target, ShieldCheck, Briefcase, ArrowRight, ArrowUpRight } from 'lucide-react';
 
 export default function Home() {
-  const navigate = useNavigate();
-  const user = useAgentStore((s) => s.user);
-  const openAuthModal = useAgentStore((s) => s.openAuthModal);
-
-  const handleGetStarted = () => {
-    if (!user) {
-      openAuthModal('signup');
-    } else {
-      navigate('/upload');
-    }
-  };
-
-  const handleResumeBuilder = () => {
-    if (!user) {
-      openAuthModal('signup');
-    } else {
-      navigate('/resume-builder');
-    }
-  };
-
   return (
-    <div className="w-full flex flex-col font-sans text-slate-900 bg-slate-50 min-h-screen">
+    <div className="w-full flex flex-col font-sans bg-[#F3F0EE] min-h-screen pb-16">
       
       {/* ===== HERO SECTION ===== */}
-      <section className="w-full bg-[#0F172A] text-white py-20 md:py-28 flex justify-center items-center border-b border-slate-800 relative overflow-hidden">
-        {/* Subtle background glow */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[500px] bg-blue-600/20 blur-[120px] rounded-full pointer-events-none"></div>
-
-        <div className="w-full max-w-5xl mx-auto px-4 md:px-8 flex flex-col items-center justify-center text-center relative z-10">
-          <div className="flex items-center gap-2 px-5 py-2 rounded-full bg-white/10 text-sm font-semibold text-blue-300 mb-8 border border-white/20 shadow-lg backdrop-blur-md">
-            <Sparkles className="w-4 h-4" />
-            ResumeAgent AI
-          </div>
+      <section className="w-full px-4 sm:px-8 lg:px-12 flex flex-col items-center justify-center">
+        <div className="w-full max-w-[1280px] bg-[#141413] hero-stadium aspect-[16/9] md:aspect-[2.2/1] relative flex items-center justify-center p-8 md:p-16 overflow-hidden">
+          {/* Subtle gradient background inside stadium */}
+          <div className="absolute inset-0 bg-gradient-to-tr from-[#141413] via-[#262627] to-[#141413] opacity-50"></div>
           
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight leading-tight mb-6">
-            Know Your Gaps.<br/>
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">Land Your Dream Role.</span>
-          </h1>
-          
-          <p className="text-base md:text-lg text-slate-400 max-w-2xl mb-10 font-medium leading-relaxed">
-            Tailor your resume point-by-point to any Job Description. Identify missing skills, optimize for ATS screening, and apply suggested changes directly in our AI Resume Builder.
-          </p>
-          
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full">
-            <button 
-              onClick={handleGetStarted}
-              className="w-full sm:w-auto px-8 py-4 bg-[#1D4ED8] hover:bg-blue-600 text-white rounded-xl font-bold transition-all shadow-[0_0_20px_rgba(29,78,216,0.3)] flex justify-center items-center gap-2 cursor-pointer"
-            >
-              {user ? 'Analyze New Resume' : 'Get Started Free'} <ArrowRight className="w-4 h-4" />
-            </button>
-            <button 
-              onClick={handleResumeBuilder}
-              className="w-full sm:w-auto px-8 py-4 bg-transparent hover:bg-white/10 text-white border border-white/20 rounded-xl font-bold transition-all flex justify-center items-center gap-2 cursor-pointer"
-            >
-              <FileEdit className="w-4 h-4 text-blue-400" />
-              Open Resume Builder
-            </button>
+          <div className="relative z-10 w-full max-w-3xl flex flex-col md:flex-row items-center md:items-end justify-between gap-12 text-center md:text-left">
+            <div className="flex-1">
+              <h1 className="text-[#F3F0EE] h1 text-5xl md:text-7xl mb-6 max-w-xl">
+                Know where you stand.<br/>
+                Go where you belong.
+              </h1>
+              <div className="flex flex-col sm:flex-row items-center md:items-start gap-4">
+                <Link to="/upload" className="btn-outline">
+                  Get Started
+                </Link>
+                <Link to="/dashboard" className="btn-ink !bg-[#262627] !border-[#262627]">
+                  View Demo
+                </Link>
+              </div>
+            </div>
+            
+            <div className="flex-1 md:max-w-xs">
+              <p className="text-[#D1CDC7] text-lg font-medium leading-relaxed">
+                A data-driven approach to your career. We analyze your experience against active job descriptions, revealing the exact skills you need to land your next role.
+              </p>
+            </div>
           </div>
         </div>
       </section>
 
       {/* ===== STATS ===== */}
-      <section className="w-full py-12 border-b border-slate-200 bg-white flex justify-center items-center">
-        <div className="w-full max-w-5xl mx-auto px-4 md:px-8">
-          <div className="flex flex-wrap justify-center gap-8 md:gap-20 text-center">
+      <section className="w-full py-24 flex justify-center items-center">
+        <div className="w-full max-w-[1280px] px-4 md:px-12">
+          <div className="flex flex-wrap justify-between gap-12">
             {[
               { v: '10k+', l: 'Resumes Analyzed' },
               { v: '95%', l: 'ATS Pass Rate' },
               { v: '150+', l: 'Skills Tracked' },
               { v: '4.9/5', l: 'User Rating' }
             ].map((stat, i) => (
-              <div key={i} className="flex flex-col items-center justify-center">
-                <div className="text-3xl font-extrabold text-[#0F172A] mb-1">{stat.v}</div>
-                <div className="text-xs text-slate-500 font-bold uppercase tracking-wider">{stat.l}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ===== FEATURES ===== */}
-      <section className="w-full py-20 flex flex-col items-center justify-center bg-slate-50">
-        <div className="w-full max-w-6xl mx-auto px-4 md:px-8 flex flex-col items-center justify-center">
-          <h2 className="text-3xl md:text-4xl font-extrabold text-[#0F172A] text-center mb-16 tracking-tight">
-            Why Professionals Choose ResumeAgent AI
-          </h2>
-
-          <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
-            {[
-              {
-                title: 'Exact Point-by-Point Resume Changes',
-                desc: 'Unlike generic AI bots, we generate specific metric-backed bullet point changes tailored to the exact JD requirements.',
-                icon: Zap,
-                color: 'text-[#1D4ED8]',
-                bg: 'bg-blue-50',
-              },
-              {
-                title: 'Connected AI Resume Builder',
-                desc: 'Upload your resume once. Directly apply our suggested JD changes into your live editable resume with 1 click.',
-                icon: FileEdit,
-                color: 'text-[#7C3AED]',
-                bg: 'bg-purple-50',
-              },
-              {
-                title: 'Persistent Cloud History & Roadmaps',
-                desc: 'Test your resume against 10 different job postings. Every dashboard, project roadmap, and score is saved to your account.',
-                icon: History,
-                color: 'text-[#059669]',
-                bg: 'bg-emerald-50',
-              }
-            ].map((feature, i) => (
-              <div key={i} className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 flex flex-col items-center text-center hover:shadow-md transition-shadow">
-                <div className={`w-14 h-14 rounded-xl ${feature.bg} ${feature.color} flex items-center justify-center mb-6`}>
-                  <feature.icon className="w-7 h-7" />
+              <div key={i} className="flex flex-col items-start">
+                <div className="text-5xl font-bold text-[#141413] mb-2 tracking-tight">{stat.v}</div>
+                <div className="eyebrow text-[#696969] flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#CF4500]"></span>
+                  {stat.l}
                 </div>
-                <h3 className="text-xl font-bold text-[#0F172A] mb-3">{feature.title}</h3>
-                <p className="text-slate-500 leading-relaxed text-sm lg:text-base">{feature.desc}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ===== HOW IT WORKS ===== */}
-      <section className="w-full py-20 bg-white flex flex-col items-center justify-center border-y border-slate-200">
-        <div className="w-full max-w-3xl mx-auto px-4 md:px-8 flex flex-col items-center justify-center">
-          <h2 className="text-3xl md:text-4xl font-extrabold text-[#0F172A] text-center mb-16 tracking-tight">
-            Four Steps to Your Dream Offer
-          </h2>
+      {/* ===== EDITORIAL SERVICE CARDS ===== */}
+      <section className="w-full py-24 flex justify-center items-center relative overflow-hidden">
+        {/* Ghost Watermark */}
+        <div className="absolute top-0 left-12 ghost-watermark">
+          EVERYTHING YOU NEED
+        </div>
 
-          <div className="w-full flex flex-col gap-10">
+        <div className="w-full max-w-[1280px] px-4 md:px-12 mt-20 relative z-10 flex flex-col gap-40">
+          
+          {/* Card 1 */}
+          <div className="flex flex-col md:flex-row items-center gap-16 md:gap-32 w-full max-w-5xl mx-auto">
+            <div className="relative">
+              <div className="w-[280px] h-[280px] md:w-[340px] md:h-[340px] bg-[#E8E2DA] portrait-circle flex items-center justify-center">
+                <Target className="w-24 h-24 text-[#9A3A0A] opacity-20" />
+              </div>
+              <button className="satellite-cta absolute bottom-4 right-0 transform translate-x-1/3 translate-y-1/3">
+                <ArrowRight className="w-6 h-6 text-[#141413]" />
+              </button>
+              {/* Orbital Arc extending to next card */}
+              <svg className="absolute top-1/2 left-full w-full h-[400px] overflow-visible pointer-events-none hidden md:block" viewBox="0 0 200 400" preserveAspectRatio="none">
+                <path d="M 0 0 C 150 0, 150 400, 300 400" fill="none" stroke="#F37338" strokeWidth="1.5" />
+              </svg>
+            </div>
+            
+            <div className="flex-1 flex flex-col justify-center max-w-md">
+              <div className="eyebrow text-[#696969] flex items-center gap-2 mb-4">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#CF4500]"></span>
+                ANALYSIS
+              </div>
+              <h3 className="h3 text-3xl mb-4 text-[#141413]">Precision Skill Mapping</h3>
+              <p className="text-lg text-[#555555]">
+                Compare your background against real-time market data. See precisely what you're missing and exactly how to bridge the gap before you apply.
+              </p>
+            </div>
+          </div>
+
+          {/* Card 2 */}
+          <div className="flex flex-col md:flex-row-reverse items-center gap-16 md:gap-32 w-full max-w-5xl mx-auto relative">
+            <div className="relative">
+              <div className="w-[280px] h-[280px] md:w-[340px] md:h-[340px] bg-[#E8E2DA] portrait-circle flex items-center justify-center">
+                <ShieldCheck className="w-24 h-24 text-[#3860BE] opacity-20" />
+              </div>
+              <button className="satellite-cta absolute bottom-4 left-0 transform -translate-x-1/3 translate-y-1/3">
+                <ArrowRight className="w-6 h-6 text-[#141413]" />
+              </button>
+              {/* Orbital Arc extending to next card */}
+              <svg className="absolute top-1/2 right-full w-full h-[400px] overflow-visible pointer-events-none hidden md:block" viewBox="0 0 200 400" preserveAspectRatio="none">
+                <path d="M 200 0 C 50 0, 50 400, -100 400" fill="none" stroke="#F37338" strokeWidth="1.5" />
+              </svg>
+            </div>
+            
+            <div className="flex-1 flex flex-col justify-center max-w-md">
+              <div className="eyebrow text-[#696969] flex items-center gap-2 mb-4">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#CF4500]"></span>
+                COMPLIANCE
+              </div>
+              <h3 className="h3 text-3xl mb-4 text-[#141413]">Automated Compliance</h3>
+              <p className="text-lg text-[#555555]">
+                Ensure your resume's format and structure can safely navigate the automated screening systems that guard modern hiring.
+              </p>
+            </div>
+          </div>
+
+          {/* Card 3 */}
+          <div className="flex flex-col md:flex-row items-center gap-16 md:gap-32 w-full max-w-5xl mx-auto">
+            <div className="relative">
+              <div className="w-[280px] h-[280px] md:w-[340px] md:h-[340px] bg-[#E8E2DA] portrait-circle flex items-center justify-center">
+                <Briefcase className="w-24 h-24 text-[#CF4500] opacity-20" />
+              </div>
+              <button className="satellite-cta absolute bottom-4 right-0 transform translate-x-1/3 translate-y-1/3">
+                <ArrowRight className="w-6 h-6 text-[#141413]" />
+              </button>
+            </div>
+            
+            <div className="flex-1 flex flex-col justify-center max-w-md">
+              <div className="eyebrow text-[#696969] flex items-center gap-2 mb-4">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#CF4500]"></span>
+                OPPORTUNITY
+              </div>
+              <h3 className="h3 text-3xl mb-4 text-[#141413]">High-Probability Matching</h3>
+              <p className="text-lg text-[#555555]">
+                Stop relying on basic keyword searches. We connect you to live roles based on a verified analysis of your actual capabilities.
+              </p>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      {/* ===== HOW IT WORKS (PILL CAROUSEL STYLE) ===== */}
+      <section className="w-full py-32 flex justify-center items-center">
+        <div className="w-full max-w-[1280px] px-4 md:px-12 flex flex-col items-center text-center">
+          <h2 className="h2 text-4xl mb-16 text-[#141413]">Four steps to hired.</h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 w-full">
             {[
-              { title: '1. Sign In & Upload Resume', desc: 'Securely upload your resume and select your verified skills (saved automatically).' },
-              { title: '2. Paste Target Job Description', desc: 'Enter any target job description or role to identify critical skill gaps and keyword mismatches.' },
-              { title: '3. Review AI Improvement Plan', desc: 'Inspect ATS compatibility scores, recommended projects, and targeted bullet rewrites.' },
-              { title: '4. 1-Click Apply to Resume Builder', desc: 'Apply all suggested improvements directly in the connected builder and export a high-scoring ATS resume.' }
+              { num: '1', title: 'Secure Upload', desc: 'Provide your current resume in standard PDF or DOCX formats.' },
+              { num: '2', title: 'Intelligent Analysis', desc: 'Our engine cross-references your experience against market demands.' },
+              { num: '3', title: 'Actionable Insights', desc: 'Receive a transparent report detailing your ATS viability.' },
+              { num: '4', title: 'Strategic Execution', desc: 'Follow your personalized roadmap and apply with certainty.' }
             ].map((step, i) => (
-              <div key={i} className="flex flex-col sm:flex-row gap-6 items-center sm:items-start text-center sm:text-left bg-slate-50 p-6 rounded-2xl border border-slate-100">
-                <div className="w-14 h-14 rounded-full bg-white border border-slate-200 text-[#1D4ED8] flex items-center justify-center font-extrabold text-2xl shrink-0 shadow-sm">
-                  {i + 1}
+              <div key={i} className="bg-[#FCFBFA] rounded-[40px] p-8 flex flex-col items-center text-center shadow-[0_24px_48px_rgba(0,0,0,0.04)] border border-black/5 hover:-translate-y-2 transition-transform duration-300">
+                <div className="w-12 h-12 rounded-full border border-[#141413] flex items-center justify-center font-medium text-xl mb-6">
+                  {step.num}
                 </div>
-                <div className="flex flex-col justify-center">
-                  <h3 className="text-lg md:text-xl font-bold text-[#0F172A] mb-2">{step.title}</h3>
-                  <p className="text-slate-500 text-sm md:text-base leading-relaxed">{step.desc}</p>
-                </div>
+                <h3 className="h3 text-xl mb-3 text-[#141413]">{step.title}</h3>
+                <p className="text-[#696969] text-base">{step.desc}</p>
               </div>
             ))}
           </div>
@@ -155,34 +172,64 @@ export default function Home() {
       </section>
 
       {/* ===== CTA ===== */}
-      <section className="w-full py-24 bg-[#0F172A] flex justify-center items-center">
-        <div className="w-full max-w-4xl mx-auto px-4 md:px-8 text-center flex flex-col items-center justify-center">
-          <div className="w-16 h-16 bg-[#1D4ED8]/20 rounded-2xl border border-[#1D4ED8]/30 flex items-center justify-center mb-8">
-            <Brain className="w-8 h-8 text-blue-400" />
-          </div>
-          <h2 className="text-3xl md:text-4xl font-extrabold text-white mb-10 tracking-tight">
-            Ready to tailor your resume for top tech companies?
+      <section className="w-full py-32 flex justify-center items-center bg-[#FCFBFA]">
+        <div className="w-full max-w-[1280px] px-4 md:px-12 text-center flex flex-col items-center justify-center">
+          <h2 className="h2 text-4xl md:text-5xl text-[#141413] mb-10 max-w-2xl">
+            Your next step starts here.
           </h2>
-          <button 
-            onClick={handleGetStarted}
-            className="w-full sm:w-auto px-8 py-4 bg-[#1D4ED8] hover:bg-blue-600 text-white rounded-xl font-bold text-base transition-all shadow-[0_0_20px_rgba(29,78,216,0.3)] flex justify-center items-center gap-2 cursor-pointer"
-          >
-            Start Analyzing Now <ArrowRight className="w-5 h-5" />
-          </button>
+          <Link to="/upload" className="btn-ink px-8 py-4 !text-lg">
+            Start For Free
+          </Link>
         </div>
       </section>
 
       {/* ===== FOOTER ===== */}
-      <footer className="w-full bg-[#0F172A] border-t border-slate-800 py-8 flex justify-center items-center">
-        <div className="w-full max-w-6xl mx-auto px-4 md:px-8 flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="font-bold text-lg text-white tracking-tight flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-[#3B82F6]" />
-            Resume<span className="text-[#3B82F6]">Agent</span>
+      <footer className="w-full bg-[#141413] pt-24 pb-12 mt-20">
+        <div className="w-full max-w-[1280px] mx-auto px-4 md:px-12">
+          
+          <h2 className="h2 text-[#F3F0EE] text-4xl max-w-2xl mb-16">
+            We're always here when you need us.
+          </h2>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12 mb-20">
+            {/* Col 1 */}
+            <div className="flex flex-col gap-4">
+              <div className="eyebrow text-[#696969] mb-2">FOR YOU</div>
+              <Link to="/upload" className="text-[#D1CDC7] hover:text-white transition-colors">Analyzer</Link>
+              <Link to="/jobs" className="text-[#D1CDC7] hover:text-white transition-colors">Jobs</Link>
+              <Link to="/roadmap" className="text-[#D1CDC7] hover:text-white transition-colors">Roadmap</Link>
+            </div>
+            {/* Col 2 */}
+            <div className="flex flex-col gap-4">
+              <div className="eyebrow text-[#696969] mb-2">FOR BUSINESS</div>
+              <Link to="#" className="text-[#D1CDC7] hover:text-white transition-colors">Recruiting <ArrowUpRight className="inline w-3 h-3 ml-1" /></Link>
+              <Link to="#" className="text-[#D1CDC7] hover:text-white transition-colors">API Access</Link>
+            </div>
+            {/* Col 3 */}
+            <div className="flex flex-col gap-4">
+              <div className="eyebrow text-[#696969] mb-2">LEGAL</div>
+              <Link to="#" className="text-[#D1CDC7] hover:text-white transition-colors">Privacy Policy</Link>
+              <Link to="#" className="text-[#D1CDC7] hover:text-white transition-colors">Terms of Service</Link>
+            </div>
+            {/* Col 4 */}
+            <div className="flex flex-col gap-4">
+              <div className="eyebrow text-[#696969] mb-2">NEED HELP?</div>
+              <Link to="#" className="text-[#D1CDC7] hover:text-white transition-colors">Support Center</Link>
+              <Link to="#" className="text-[#D1CDC7] hover:text-white transition-colors">Contact Us</Link>
+            </div>
           </div>
-          <div className="flex flex-wrap justify-center gap-6 text-sm font-semibold text-slate-400">
-            <button onClick={handleGetStarted} className="hover:text-white transition-colors cursor-pointer">Analyzer</button>
-            <button onClick={handleResumeBuilder} className="hover:text-white transition-colors cursor-pointer">Resume Builder</button>
+
+          <div className="border-t border-white/20 pt-8 flex flex-col md:flex-row justify-between items-center gap-6">
+            <div className="text-[#696969] text-sm font-medium">
+              © 2026 ResumeAgent. All rights reserved.
+            </div>
+            <div className="flex items-center gap-6">
+              <button className="border border-white/40 text-white rounded-full px-6 py-2 text-sm font-medium hover:bg-white/10 transition-colors">
+                English (US) ▼
+              </button>
+            </div>
           </div>
+
         </div>
       </footer>
     </div>

@@ -31,31 +31,32 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className="bg-dark sticky top-0 z-40 border-b border-white/10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+      <nav className="fixed top-6 w-full z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-center">
+          <div className="nav-pill-container w-full lg:w-auto px-4 sm:px-10 py-3 flex items-center justify-between lg:justify-center gap-12">
+            
             {/* Logo */}
             <Link to="/" className="flex items-center gap-2 group">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center group-hover:bg-primary-light transition-colors">
-                <Sparkles className="w-5 h-5 text-white" />
+              <div className="w-8 h-8 rounded-full bg-[#141413] flex items-center justify-center transition-colors">
+                <Sparkles className="w-4 h-4 text-white" />
               </div>
-              <span className="text-white font-bold text-xl tracking-tight">
-                Resume<span className="text-primary-light">Agent</span>
+              <span className="text-[#141413] font-bold text-xl tracking-tight leading-none">
+                ResumeAgent
               </span>
             </Link>
 
             {/* Desktop Nav */}
-            <div className="hidden md:flex items-center gap-1">
+            <div className="hidden lg:flex items-center gap-8">
               {visibleNavLinks.map((link) => {
                 const isActive = location.pathname === link.path;
                 return (
                   <Link
                     key={link.path}
                     to={link.path}
-                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    className={`nav-link transition-colors ${
                       isActive
-                        ? 'bg-primary text-white shadow-lg shadow-primary/25'
-                        : 'text-gray-300 hover:text-white hover:bg-white/10'
+                        ? 'text-[#141413]'
+                        : 'text-[#696969] hover:text-[#141413]'
                     }`}
                   >
                     {link.name}
@@ -65,18 +66,18 @@ export default function Navbar() {
             </div>
 
             {/* Auth Buttons / User Profile */}
-            <div className="hidden md:flex items-center gap-3">
+            <div className="hidden lg:flex items-center gap-3">
               {user ? (
                 <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/10 text-white text-xs font-medium border border-white/15">
-                    <UserCheck className="w-3.5 h-3.5 text-success" />
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#F3F0EE] text-[#141413] text-sm font-medium border border-[#D1CDC7]">
+                    <UserCheck className="w-4 h-4 text-success" />
                     <span className="max-w-[140px] truncate">{user.name || user.email}</span>
                   </div>
                   <button
                     onClick={logout}
-                    className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-gray-300 hover:text-danger hover:bg-danger/10 rounded-lg transition-colors cursor-pointer"
+                    className="flex items-center gap-1 px-3 py-1.5 text-sm font-semibold text-[#696969] hover:text-danger hover:bg-danger/10 rounded-lg transition-colors cursor-pointer"
                   >
-                    <LogOut className="w-3.5 h-3.5" />
+                    <LogOut className="w-4 h-4" />
                     Logout
                   </button>
                 </div>
@@ -84,16 +85,15 @@ export default function Navbar() {
                 <>
                   <button
                     onClick={() => openAuthModal('login')}
-                    className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-gray-300 hover:text-white transition-colors cursor-pointer"
+                    className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-[#141413] hover:text-[#696969] transition-colors cursor-pointer"
                   >
                     <LogIn className="w-4 h-4" />
                     Login
                   </button>
                   <button
                     onClick={() => openAuthModal('signup')}
-                    className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-primary hover:bg-primary-light text-white rounded-lg transition-colors cursor-pointer shadow-sm shadow-primary/20"
+                    className="btn-ink"
                   >
-                    <UserPlus className="w-4 h-4" />
                     Sign Up
                   </button>
                 </>
@@ -102,7 +102,7 @@ export default function Navbar() {
 
             {/* Mobile Menu Toggle */}
             <button
-              className="md:hidden p-2 text-gray-300 hover:text-white cursor-pointer"
+              className="lg:hidden p-2 text-[#141413] cursor-pointer"
               onClick={() => setMobileOpen(!mobileOpen)}
             >
               {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -112,8 +112,8 @@ export default function Navbar() {
 
         {/* Mobile Menu */}
         {mobileOpen && (
-          <div className="md:hidden bg-dark-light border-t border-white/10 animate-fade-in">
-            <div className="px-4 py-3 space-y-1">
+          <div className="lg:hidden absolute top-full left-4 right-4 mt-2 bg-white rounded-3xl p-6 shadow-2xl border border-black/5 animate-fade-in">
+            <div className="space-y-4">
               {visibleNavLinks.map((link) => {
                 const isActive = location.pathname === link.path;
                 return (
@@ -121,10 +121,10 @@ export default function Navbar() {
                     key={link.path}
                     to={link.path}
                     onClick={() => setMobileOpen(false)}
-                    className={`block px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                    className={`block text-lg font-medium transition-colors ${
                       isActive
-                        ? 'bg-primary text-white'
-                        : 'text-gray-300 hover:text-white hover:bg-white/10'
+                        ? 'text-[#141413]'
+                        : 'text-[#696969]'
                     }`}
                   >
                     {link.name}
@@ -132,32 +132,34 @@ export default function Navbar() {
                 );
               })}
               
-              <div className="pt-3 border-t border-white/10">
+              <div className="pt-6 mt-4 border-t border-black/5 flex flex-col gap-3">
                 {user ? (
-                  <div className="flex items-center justify-between py-2">
-                    <span className="text-xs text-gray-300 font-medium truncate">{user.name || user.email}</span>
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-[#696969] font-medium truncate">{user.name || user.email}</span>
+                    </div>
                     <button
                       onClick={() => { logout(); setMobileOpen(false); }}
-                      className="text-xs font-semibold text-danger px-3 py-1 bg-danger/10 rounded-lg"
+                      className="w-full btn-outline border-danger text-danger hover:bg-danger hover:text-white"
                     >
                       Logout
                     </button>
                   </div>
                 ) : (
-                  <div className="flex gap-2">
+                  <>
                     <button
                       onClick={() => { openAuthModal('login'); setMobileOpen(false); }}
-                      className="flex-1 py-2.5 text-sm font-medium text-gray-300 hover:text-white transition-colors rounded-lg border border-white/20 cursor-pointer"
+                      className="w-full btn-outline"
                     >
                       Login
                     </button>
                     <button
                       onClick={() => { openAuthModal('signup'); setMobileOpen(false); }}
-                      className="flex-1 py-2.5 text-sm font-medium bg-primary text-white rounded-lg cursor-pointer"
+                      className="w-full btn-ink"
                     >
                       Sign Up
                     </button>
-                  </div>
+                  </>
                 )}
               </div>
             </div>
