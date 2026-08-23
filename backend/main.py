@@ -1,6 +1,8 @@
 import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
 from routes.analyse import router as analyse_router
 from routes.resume import router as resume_router
@@ -14,14 +16,16 @@ from routes.history import router as history_router
 
 app = FastAPI(title="ResumeAgent API")
 
+# Configure CORS - allow all origins in production or Render
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# Register API Routers
 app.include_router(analyse_router, prefix="/api/analyse")
 app.include_router(resume_router, prefix="/api/resume")
 app.include_router(ai_router, prefix="/api/ai")
@@ -38,6 +42,26 @@ async def startup_event():
     os.makedirs("uploads", exist_ok=True)
     print("Uploads directory is ready.")
 
-@app.get("/")
-def root():
-    return {"message": "Welcome to the ResumeAgent API"}
+# Check for built frontend static files (for Docker single-service deployment)
+STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
+if not os.path.exists(STATIC_DIR):
+    # Also check frontend/dist
+    STATIC_DIR = os.path.join(os.path.dirname(__file__), "..", "frontend", "dist")
+
+if os.path.exists(STATIC_DIR) and os.path.exists(os.path.join(STATIC_DIR, "index.html")):
+    app.mount("/assets", StaticFiles(directory=os.path.join(STATIC_DIR, "assets")), name="assets")
+
+    @app.get("/{full_path:path}")
+    async def serve_spa(full_path: str):
+        # If API path, let it 404 naturally
+        if full_path.startswith("api/"):
+            return {"error": "API route not found"}
+        
+        file_path = os.path.join(STATIC_DIR, full_path)
+        if os.path.exists(file_path) and os.path.isfile(file_path):
+            return FileResponse(file_path)
+        return FileResponse(os.path.join(STATIC_DIR, "index.html"))
+else:
+    @app.get("/")
+    def root():
+        return {"message": "Welcome to the ResumeAgent API", "status": "running"}
