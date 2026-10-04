@@ -48,9 +48,13 @@ backend/data/raw/
 !backend/data/processed/skill_aliases.json
 !backend/data/processed/onet_processed.json
 
-# ── ChromaDB ────────────────────────────────────────────
+# ── ChromaDB & SQLite ───────────────────────────────────
 chroma_db/
 *.chroma
+*.db
+*.sqlite
+*.sqlite3
+backend/data/*.db
 
 # ── Node / Frontend ─────────────────────────────────────
 node_modules/

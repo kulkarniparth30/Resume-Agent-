@@ -25,7 +25,7 @@ async def enhance_section(section_type: str, content: str, jd_context: str = '',
     Please provide the enhanced version of the content directly, without preamble.
     """
     
-    enhanced = await call_llm(prompt=prompt, system_prompt=system_prompt, provider='gemini')
+    enhanced = await call_llm(prompt=prompt, system_prompt=system_prompt, provider='groq')
     return enhanced.strip()
 
 async def enhance_bullet(bullet: str, context: str = '') -> str:
@@ -41,5 +41,5 @@ async def enhance_bullet(bullet: str, context: str = '') -> str:
     Enhanced Bullet (return just the text, no quotes):
     """
     
-    enhanced = await call_llm(prompt=prompt, system_prompt=system_prompt, provider='gemini')
+    enhanced = await call_llm(prompt=prompt, system_prompt=system_prompt, provider='groq')
     return enhanced.strip()

@@ -11,6 +11,7 @@ const allNavLinks = [
   { name: 'Resume Builder', path: '/resume-builder', protected: true },
   { name: 'Roadmap', path: '/roadmap', protected: true },
   { name: 'Jobs', path: '/jobs', protected: true },
+  { name: 'Copilot', path: '/chat', protected: true },
 ];
 
 export default function Navbar() {

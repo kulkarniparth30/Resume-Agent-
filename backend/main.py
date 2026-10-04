@@ -13,6 +13,7 @@ from routes.jobs import router as jobs_router
 from routes.projects import router as projects_router
 from routes.auth import router as auth_router
 from routes.history import router as history_router
+from routes.chat import router as chat_router
 
 app = FastAPI(title="ResumeAgent API")
 
@@ -40,12 +41,14 @@ app.include_router(jobs_router, prefix="/api/jobs")
 app.include_router(projects_router, prefix="/api/projects")
 app.include_router(auth_router, prefix="/api/auth")
 app.include_router(history_router, prefix="/api/history")
+app.include_router(chat_router, prefix="/api/chat")
 
 @app.on_event("startup")
 async def startup_event():
     print("Starting ResumeAgent FastAPI server...")
     os.makedirs("uploads", exist_ok=True)
-    print("Uploads directory is ready.")
+    os.makedirs("data", exist_ok=True)
+    print("Uploads and data directories are ready.")
 
 # Check for built frontend static files (for Docker single-service deployment)
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")

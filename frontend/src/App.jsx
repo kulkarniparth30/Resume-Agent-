@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard';
 import ResumeBuilder from './pages/ResumeBuilder';
 import Roadmap from './pages/Roadmap';
 import JobFinder from './pages/JobFinder';
+import Chat from './pages/Chat';
 import useAgentStore from './store/useAgentStore';
 
 function ProtectedRoute({ children }) {
@@ -50,6 +51,7 @@ export default function App() {
             <Route path="/resume-builder" element={<ProtectedRoute><ResumeBuilder /></ProtectedRoute>} />
             <Route path="/roadmap" element={<ProtectedRoute><Roadmap /></ProtectedRoute>} />
             <Route path="/jobs" element={<ProtectedRoute><JobFinder /></ProtectedRoute>} />
+            <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>

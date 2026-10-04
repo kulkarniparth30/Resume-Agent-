@@ -62,6 +62,20 @@
 ### 6. 🔐 Cloud History & Self-Healing Authentication
 - Powered by Supabase database storage with automatic, self-healing local session fallback.
 
+### 7. 🤖 LangGraph "Career Copilot" Autonomous Career Agent
+- **Dedicated LangGraph Subsystem**: Built as an autonomous state machine in `backend/chatbot/` utilizing typed states, tool calling, and SQLite persistence.
+- **Strict Guard Classifier Node**: Fast topic classification ensuring all queries remain strictly related to careers, skills, ATS optimization, and jobs; cleanly refuses off-topic questions or prompt injection attempts.
+- **Proactive Toolset**:
+  - `get_user_profile`: Reads candidate skills, target role, and location.
+  - `save_preference`: Persists work style (remote/hybrid/onsite), minimum salary, and preferred roles.
+  - `search_jobs`: Queries active postings through swappable `JobsProvider` interface.
+  - `match_job_to_profile`: Calculates real-time skill overlap and missing prerequisites.
+  - `get_skill_gap`: Wraps the resume analysis engine to highlight missing competencies.
+  - `get_roadmap`: Synthesizes customized learning paths and timelines.
+  - `get_ats_score`: Evaluates resume compatibility against new job descriptions.
+- **Dynamic Memory Extraction Node**: Analyzes conversation turns to detect and persist newly acquired skills or updated career goals.
+- **Multi-Turn Chat Studio**: Full-page interactive chat interface matching the editorial cream/ink design system with live profile inspection drawer and quick-prompt triggers.
+
 ---
 
 ## 🏗️ System Architecture
@@ -240,6 +254,9 @@ Visit `http://localhost:8000`.
 | `POST` | `/api/projects/guide` | Step-by-step architecture & implementation guide for recommended projects |
 | `POST` | `/api/auth/signup` | Register a new user account |
 | `POST` | `/api/auth/login` | Authenticate existing user credentials |
+| `POST` | `/api/chat` | Send message to LangGraph Career Copilot with tool execution & profile memory |
+| `GET` | `/api/chat/profile/{user_id}` | Retrieve persistent candidate skills, goals & preferences |
+| `POST` | `/api/chat/profile/{user_id}/preference` | Direct update of a specific candidate preference |
 | `GET` | `/api/history` | Retrieve saved analysis history |
 | `GET` | `/health` | Uptime and health check endpoint |
 
@@ -264,15 +281,24 @@ Resume-Agent-/
 │   │   ├── analyse.py          # Resume analysis & multi-resume ranking
 │   │   ├── resume.py           # File upload & text extraction
 │   │   ├── ai.py               # Section & bullet point AI enhancers
+│   │   ├── chat.py             # Career Copilot endpoint & profile store routes
 │   │   ├── roadmap.py          # Career roadmap generation
 │   │   ├── learn_resources.py  # Educational resource aggregator
 │   │   ├── jobs.py             # Job listing search & recommendations
 │   │   ├── projects.py         # Portfolio project building guides
 │   │   ├── auth.py             # User authentication routes
 │   │   └── history.py          # Analysis history management
+│   ├── chatbot/                # LangGraph Career Copilot Module
+│   │   ├── graph.py            # Guard -> Agent -> ToolNode -> Memory state graph
+│   │   ├── guard.py            # Prompt injection resistant topic classifier
+│   │   ├── memory.py           # SQLite candidate profile & preference store
+│   │   ├── tools.py            # 7 typed career tools with bound schemas
+│   │   ├── jobs_provider.py    # Swappable official jobs provider (Remotive/Mock)
+│   │   ├── prompts.py          # System prompts for guard, agent & memory
+│   │   └── state.py            # CopilotState schema
 │   └── services/               # Core Business Logic & AI Services
 │       ├── analyser.py         # ATS scoring & skill gap algorithms
-│       ├── llm_service.py      # Dual-provider LLM caller (Gemini + Groq)
+│       ├── llm_service.py      # Dual-provider LLM caller (Groq + Gemini)
 │       ├── resume_parser.py    # PDF/DOCX file extractors
 │       ├── roadmap_generator.py# Up-skilling timeline synthesizer
 │       ├── learn_service.py    # Vetted learning resources curator
@@ -289,13 +315,20 @@ Resume-Agent-/
         ├── index.css           # Tailwind CSS v4 styling & color tokens
         ├── api/                # API client adapters (Axios)
         │   ├── client.js       # Base Axios instance & auth interceptors
+        │   ├── chat.js         # Career Copilot message & profile API
         │   ├── analyse.js      # Analysis & upload endpoints
         │   ├── ai.js           # AI tone enhancer endpoints
         │   ├── auth.js         # User login & signup endpoints
         │   ├── jobs.js         # Job fetching endpoints
         │   ├── learn.js        # Educational resources endpoints
         │   └── projects.js     # Project guide endpoints
+        ├── pages/
+        │   ├── Chat.jsx        # Career Copilot interactive chatbot page
+        │   ├── Dashboard.jsx   # Analytics & resume metrics overview
+        │   ├── Upload.jsx      # Resume upload & parsing
+        │   └── ...
         ├── components/         # Reusable UI Components
+        │   ├── ChatMessage.jsx # Interactive message bubble with tool badges
         │   ├── Navbar.jsx      # Navigation header with auth controls
         │   ├── ATSScoreRing.jsx# Circular animated score rings
         │   ├── SkillCard.jsx   # Interactive skill badge pills

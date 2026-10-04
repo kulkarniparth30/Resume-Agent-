@@ -9,7 +9,7 @@ async def call_llm(prompt: str, system_prompt: str = None, provider: str = 'gemi
 
     def call_gemini():
         client = genai.Client(api_key=GEMINI_API_KEY)
-        models = ['gemini-3.6-flash']
+        models = ['gemini-3.5-flash-lite', 'gemini-3.8-flash', 'gemini-3.6-flash']
         last_err = None
         for model in models:
             try:

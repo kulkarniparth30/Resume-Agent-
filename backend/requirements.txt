@@ -9,3 +9,6 @@ python-docx
 pydantic
 httpx
 supabase
+langgraph
+langchain-google-genai
+langchain-core

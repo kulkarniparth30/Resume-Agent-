@@ -1,5 +1,5 @@
-import { create } from 'zustand';
 import { fetchHistory, saveHistory, getCurrentUser, logout as apiLogout } from '../api/auth';
+import { fetchSavedRoadmaps, deleteRoadmapApi } from '../api/roadmap';
 
 const getInitialSkills = () => {
   try {
@@ -46,6 +46,15 @@ const getInitialSavedResumes = () => {
   }
 };
 
+const getInitialSavedRoadmaps = () => {
+  try {
+    const saved = localStorage.getItem('saved_roadmaps');
+    return saved ? JSON.parse(saved) : [];
+  } catch {
+    return [];
+  }
+};
+
 const useAgentStore = create((set, get) => ({
   // Inputs
   resumeText: '',
@@ -63,6 +72,8 @@ const useAgentStore = create((set, get) => ({
   
   // Roadmap
   roadmapData: null,
+  savedRoadmaps: getInitialSavedRoadmaps(),
+  activeRoadmapId: null,
   
   // Resume Builder Data
   resumeData: {
@@ -241,7 +252,92 @@ const useAgentStore = create((set, get) => ({
   }),
 
   // Actions — Roadmap
-  setRoadmapData: (data) => set({ roadmapData: data }),
+  setRoadmapData: (data, role = '', id = null, rankScore = 60, timeline = '') => {
+    const state = get();
+    let currentSaved = [...state.savedRoadmaps];
+    const targetRole = role || state.jobRole || 'Custom Career';
+    if (data && Array.isArray(data) && data.length > 0) {
+      const existingIdx = currentSaved.findIndex(
+        r => (id && r.id === id) || (r.role && r.role.toLowerCase() === targetRole.toLowerCase())
+      );
+      const entry = {
+        id: id || Date.now(),
+        role: targetRole,
+        title: `${targetRole} Roadmap`,
+        timeline: timeline || '3-4 months',
+        rank_score: rankScore,
+        roadmap_data: data,
+        updated_at: new Date().toISOString()
+      };
+      if (existingIdx >= 0) {
+        currentSaved[existingIdx] = { ...currentSaved[existingIdx], ...entry };
+      } else {
+        currentSaved = [entry, ...currentSaved];
+      }
+      try {
+        localStorage.setItem('saved_roadmaps', JSON.stringify(currentSaved));
+      } catch {}
+    }
+    set({
+      roadmapData: data,
+      savedRoadmaps: currentSaved,
+      activeRoadmapId: id || currentSaved[0]?.id || null,
+      jobRole: targetRole || state.jobRole
+    });
+  },
+
+  setActiveRoadmap: (roadmapEntry) => {
+    if (!roadmapEntry) return;
+    set({
+      roadmapData: roadmapEntry.roadmap_data || roadmapEntry.roadmap || roadmapEntry,
+      activeRoadmapId: roadmapEntry.id,
+      jobRole: roadmapEntry.role || get().jobRole
+    });
+  },
+
+  fetchUserRoadmaps: async (userId = 'default_user') => {
+    try {
+      const list = await fetchSavedRoadmaps(userId);
+      if (Array.isArray(list) && list.length > 0) {
+        set({ savedRoadmaps: list });
+        try {
+          localStorage.setItem('saved_roadmaps', JSON.stringify(list));
+        } catch {}
+        const currentActiveId = get().activeRoadmapId;
+        const active = list.find(r => r.id === currentActiveId) || list[0];
+        if (active) {
+          set({
+            roadmapData: active.roadmap_data,
+            activeRoadmapId: active.id,
+            jobRole: active.role || get().jobRole
+          });
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to fetch user roadmaps from API, keeping local cache:', e);
+    }
+  },
+
+  deleteRoadmap: async (id, userId = 'default_user') => {
+    try {
+      await deleteRoadmapApi(id, userId);
+    } catch (e) {
+      console.warn('Backend delete roadmap notice:', e);
+    }
+    const state = get();
+    const updated = state.savedRoadmaps.filter(r => r.id !== id);
+    try {
+      localStorage.setItem('saved_roadmaps', JSON.stringify(updated));
+      localStorage.removeItem(`roadmap_completed_${id}`);
+    } catch {}
+    const nextActive = updated[0] || null;
+    set({
+      savedRoadmaps: updated,
+      activeRoadmapId: nextActive ? nextActive.id : null,
+      roadmapData: nextActive ? nextActive.roadmap_data : null,
+      jobRole: nextActive ? nextActive.role : state.jobRole
+    });
+  },
 
   // Actions — Resume Builder
   setResumeData: (data) => set({ resumeData: data }),

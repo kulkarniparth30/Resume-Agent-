@@ -59,7 +59,7 @@ async def analyse_resume(resume_text: str, jd_text: str = '', job_role: str = ''
     }}
     """
     
-    response = await call_llm(prompt=prompt, provider='gemini', json_mode=True)
+    response = await call_llm(prompt=prompt, provider='groq', json_mode=True)
     
     try:
         # Strip markdown json blocks if present
