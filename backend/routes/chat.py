@@ -154,6 +154,12 @@ async def chat_stream_endpoint(req: ChatRequest, user: Optional[dict] = Depends(
         is_off_topic = False
         saved_roadmap_info = None
 
+        def safe_sse(obj: dict) -> str:
+            try:
+                return f"data: {json.dumps(obj, default=str)}\n\n"
+            except Exception as ser_err:
+                return f"data: {json.dumps({'type': 'error', 'error': str(ser_err)}, default=str)}\n\n"
+
         try:
             async for event in copilot_app.astream_events(state_input, version="v2"):
                 kind = event.get("event")
@@ -167,7 +173,7 @@ async def chat_stream_endpoint(req: ChatRequest, user: Optional[dict] = Depends(
                     tool_name = event.get("name", "tool")
                     tools_called.append(tool_name)
                     tool_input = event["data"].get("input", {})
-                    yield f"data: {json.dumps({'type': 'tool_start', 'tool': tool_name, 'input': tool_input})}\n\n"
+                    yield safe_sse({'type': 'tool_start', 'tool': tool_name, 'input': tool_input})
 
                 elif kind == "on_tool_end":
                     tool_name = event.get("name", "tool")
@@ -177,11 +183,11 @@ async def chat_stream_endpoint(req: ChatRequest, user: Optional[dict] = Depends(
                             try:
                                 saved_roadmap_info = json.loads(tool_out.content) if isinstance(tool_out.content, str) else tool_out.content
                             except Exception:
-                                saved_roadmap_info = tool_out.content
+                                saved_roadmap_info = str(tool_out.content)
                         elif isinstance(tool_out, dict):
                             saved_roadmap_info = tool_out
 
-                    yield f"data: {json.dumps({'type': 'tool_end', 'tool': tool_name})}\n\n"
+                    yield safe_sse({'type': 'tool_end', 'tool': tool_name})
 
                 elif kind == "on_chat_model_stream":
                     chunk = event["data"].get("chunk")
@@ -198,11 +204,11 @@ async def chat_stream_endpoint(req: ChatRequest, user: Optional[dict] = Depends(
                                     token_str += item
                         if token_str:
                             accumulated_text.append(token_str)
-                            yield f"data: {json.dumps({'type': 'token', 'content': token_str})}\n\n"
+                            yield safe_sse({'type': 'token', 'content': token_str})
 
         except Exception as e:
             print(f"[ChatStream] Streaming error: {e}")
-            yield f"data: {json.dumps({'type': 'error', 'error': str(e)})}\n\n"
+            yield safe_sse({'type': 'error', 'error': str(e)})
 
         final_response_text = "".join(accumulated_text).strip() or "I'm here to assist with your career goals."
 
@@ -216,6 +222,24 @@ async def chat_stream_endpoint(req: ChatRequest, user: Optional[dict] = Depends(
             except Exception as rm_err:
                 print(f"[ChatStream] Non-fatal roadmap lookup error: {rm_err}")
 
+        # Ensure saved_roadmap_info is JSON safe
+        clean_roadmap = None
+        if saved_roadmap_info:
+            if isinstance(saved_roadmap_info, dict):
+                clean_roadmap = {
+                    "id": saved_roadmap_info.get("id"),
+                    "role": saved_roadmap_info.get("role") or saved_roadmap_info.get("target_role"),
+                    "title": saved_roadmap_info.get("title"),
+                    "timeline": saved_roadmap_info.get("timeline"),
+                    "rank_score": saved_roadmap_info.get("rank_score", 60),
+                    "roadmap": saved_roadmap_info.get("roadmap") or saved_roadmap_info.get("roadmap_data", [])
+                }
+            elif hasattr(saved_roadmap_info, "content"):
+                try:
+                    clean_roadmap = json.loads(saved_roadmap_info.content)
+                except Exception:
+                    clean_roadmap = str(saved_roadmap_info.content)
+
         try:
             save_thread_message(thread_key, "user", req.message)
             save_thread_message(thread_key, "assistant", final_response_text)
@@ -224,7 +248,14 @@ async def chat_stream_endpoint(req: ChatRequest, user: Optional[dict] = Depends(
             print(f"[ChatStream] DB save error: {db_err}")
 
         updated_profile = get_profile(effective_user_id)
-        yield f"data: {json.dumps({'type': 'done', 'response': final_response_text, 'is_off_topic': is_off_topic, 'tool_calls_made': list(set(tools_called)), 'profile': updated_profile, 'saved_roadmap': saved_roadmap_info})}\n\n"
+        yield safe_sse({
+            'type': 'done',
+            'response': final_response_text,
+            'is_off_topic': is_off_topic,
+            'tool_calls_made': list(set(tools_called)),
+            'profile': updated_profile,
+            'saved_roadmap': clean_roadmap
+        })
 
     return StreamingResponse(
         event_generator(),
